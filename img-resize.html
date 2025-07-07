@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resize Image Tool - MyToolsWebsite</title>
+
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="Easily resize your images online with our free, fast, and secure image resize tool. Supports JPG, PNG, GIF formats with no registration required." />
+  <meta name="keywords" content="Image Resize, Resize Image Online, Free Image Resizer, Photo Editor, Image Tools" />
+  <meta name="author" content="MyToolsWebsite" />
+  <link rel="canonical" href="https://yourwebsite.com/resize-image" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Resize Image Tool - MyToolsWebsite" />
+  <meta property="og:description" content="Resize images online instantly and for free. No signup needed!" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://yourwebsite.com/resize-image" />
+  <meta property="og:image" content="https://yourwebsite.com/assets/resize-image-preview.png" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Resize Image Tool - MyToolsWebsite" />
+  <meta name="twitter:description" content="Resize images online quickly and easily with this free tool." />
+  <meta name="twitter:image" content="https://yourwebsite.com/assets/resize-image-preview.png" />
+
+  <!-- Favicon -->
+  <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Resize Image Tool",
+    "url": "https://yourwebsite.com/resize-image",
+    "applicationCategory": "ImageEditingApplication",
+    "operatingSystem": "All",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+  </script>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #f5f7fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    header {
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      padding: 1.5rem;
+      text-align: center;
+      color: #fff;
+    }
+    header h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+    /* Removed nav styles since nav tag is gone */
+
+    main {
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 2rem;
+      background-color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+      font-size: 2rem;
+      color: #222;
+      margin-bottom: 1rem;
+    }
+
+    p.description {
+      text-align: center;
+      max-width: 700px;
+      margin: 0 auto 2rem;
+      color: #555;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    label {
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+    }
+
+    input[type="file"],
+    input[type="number"] {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .input-group > div {
+      flex: 1;
+      min-width: 150px;
+    }
+
+    button {
+      padding: 12px;
+      background: #4CAF50;
+      color: #fff;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #45a049;
+    }
+
+    #result {
+      margin-top: 2rem;
+      text-align: center;
+    }
+
+    #result img {
+      max-width: 100%;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+
+    #result a {
+      display: inline-block;
+      padding: 12px 20px;
+      background: #4CAF50;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      transition: background 0.3s;
+    }
+
+    #result a:hover {
+      background: #3e8e41;
+    }
+
+    footer {
+      margin-top: 3rem;
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      padding: 1.5rem;
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 600px) {
+      header h1 {
+        font-size: 1.5rem;
+      }
+      /* Removed nav styles */
+      .input-group {
+        flex-direction: column;
+      }
+      button {
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>MyToolsWebsite</h1>
+  <!-- Removed navigation menu -->
+</header>
+
+<main>
+  <h2 id="resize-section">Resize Your Image</h2>
+  <p class="description">
+    Upload your image, choose new width and height, and instantly download your resized image. Fast, free & supports JPG, PNG, GIF and more.
+  </p>
+
+  <form id="resizeForm" enctype="multipart/form-data" onsubmit="return false;">
+    <label for="imageUpload">Select Image</label>
+    <input type="file" id="imageUpload" accept="image/*" required />
+
+    <div class="input-group">
+      <div>
+        <label for="width">Width (px)</label>
+        <input type="number" id="width" min="1" placeholder="e.g., 800" required />
+      </div>
+      <div>
+        <label for="height">Height (px)</label>
+        <input type="number" id="height" min="1" placeholder="e.g., 600" required />
+      </div>
+    </div>
+
+    <button type="submit" onclick="resizeImage()">Resize Image</button>
+  </form>
+
+  <div id="result"></div>
+</main>
+
+<footer>
+  © 2024 MyToolsWebsite. All rights reserved.
+</footer>
+
+<script>
+  function resizeImage() {
+    const fileInput = document.getElementById('imageUpload');
+    const widthInput = document.getElementById('width');
+    const heightInput = document.getElementById('height');
+    const resultDiv = document.getElementById('result');
+
+    if (!fileInput.files[0]) {
+      alert('Please select an image file.');
+      return;
+    }
+
+    const file = fileInput.files[0];
+    const desiredWidth = parseInt(widthInput.value);
+    const desiredHeight = parseInt(heightInput.value);
+
+    if (isNaN(desiredWidth) || isNaN(desiredHeight) || desiredWidth <= 0 || desiredHeight <= 0) {
+      alert('Please enter valid width and height.');
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        canvas.width = desiredWidth;
+        canvas.height = desiredHeight;
+        const ctx = canvas.getContext('2d');
+
+        ctx.drawImage(img, 0, 0, desiredWidth, desiredHeight);
+
+        const resizedDataUrl = canvas.toDataURL('image/png');
+
+        resultDiv.innerHTML = `
+          <h3>Resized Image</h3>
+          <img src="${resizedDataUrl}" alt="Resized Image" />
+          <br />
+          <a href="${resizedDataUrl}" download="resized-image.png">Download Resized Image</a>
+        `;
+      };
+      img.src = e.target.result;
+    };
+
+    reader.readAsDataURL(file);
+  }
+</script>
+
+</body>
+</html>
