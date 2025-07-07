@@ -3,14 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PDF to Image Converter (Fast Client Side)</title>
-
-  <!-- Google Font -->
+  <title>PDF to Image Converter</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
-
-  <!-- pdf.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-
   <style>
     body {
       font-family: 'Poppins', sans-serif;
@@ -28,6 +23,8 @@
       border-radius: 10px;
       text-align: center;
       margin-bottom: 1rem;
+      transition: background 0.3s, border-color 0.3s;
+      cursor: pointer;
     }
     #drop-area.hover {
       border-color: #00b09b;
@@ -44,6 +41,14 @@
       border-radius: 6px;
       font-size: 1rem;
       cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover:not(:disabled) {
+      background: linear-gradient(90deg, #019180, #85b338);
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
     #progress-container {
       width: 100%;
@@ -53,6 +58,7 @@
       border-radius: 10px;
       margin: 1rem auto;
       overflow: hidden;
+      display: none;
     }
     #progress-bar {
       height: 100%;
@@ -87,10 +93,10 @@
 <body>
   <h1>PDF to Image Converter</h1>
   <div id="drop-area">
-    <p>Drag & Drop PDF files or <button id="file-btn">Select Files</button></p>
+    <p>Drag & Drop PDF files here or <button id="file-btn">Select Files</button></p>
     <input type="file" id="file-input" multiple accept="application/pdf" />
   </div>
-  <div id="progress-container" style="display:none;">
+  <div id="progress-container">
     <div id="progress-bar"></div>
   </div>
   <div id="status"></div>
@@ -109,33 +115,46 @@
 
     let selectedFiles = [];
 
-    // Trigger input
     fileBtn.onclick = () => fileInput.click();
+
     fileInput.onchange = () => {
       selectedFiles = Array.from(fileInput.files);
       updateUI();
     };
 
-    // Drag events
-    dropArea.addEventListener('dragover', e => {
-      e.preventDefault();
-      dropArea.classList.add('hover');
+    // Advanced drag & drop
+    ['dragenter', 'dragover'].forEach(event => {
+      dropArea.addEventListener(event, e => {
+        e.preventDefault();
+        dropArea.classList.add('hover');
+      });
     });
-    dropArea.addEventListener('dragleave', () => dropArea.classList.remove('hover'));
+
+    ['dragleave', 'drop'].forEach(event => {
+      dropArea.addEventListener(event, e => {
+        e.preventDefault();
+        dropArea.classList.remove('hover');
+      });
+    });
+
     dropArea.addEventListener('drop', e => {
-      e.preventDefault();
-      dropArea.classList.remove('hover');
-      selectedFiles = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
-      updateUI();
+      const droppedFiles = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
+      if (droppedFiles.length) {
+        selectedFiles = droppedFiles;
+        updateUI();
+      }
     });
 
     function updateUI() {
       convertBtn.disabled = selectedFiles.length === 0;
       imagesContainer.innerHTML = '';
       statusDiv.innerText = '';
+      dropArea.innerHTML = selectedFiles.length
+        ? `<p>${selectedFiles.length} PDF file(s) ready.</p><button id="file-btn">Select More</button>`
+        : `<p>Drag & Drop PDF files here or <button id="file-btn">Select Files</button></p>`;
+      document.getElementById('file-btn').onclick = () => fileInput.click();
     }
 
-    // Convert PDF pages concurrently
     convertBtn.onclick = async () => {
       imagesContainer.innerHTML = '';
       statusDiv.innerText = '';
@@ -143,25 +162,25 @@
       progressBar.style.width = '0%';
 
       let totalPages = 0;
-      const docPromises = [];
+      const pdfs = [];
 
-      // Count total pages
+      // Preload PDFs and count pages
       for (const file of selectedFiles) {
         const buffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-        docPromises.push({ file, pdf });
+        pdfs.push({ file, pdf });
         totalPages += pdf.numPages;
       }
 
       let processedPages = 0;
 
-      for (const { file, pdf } of docPromises) {
+      for (const { file, pdf } of pdfs) {
         const tasks = [];
-
-        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        for (let i = 1; i <= pdf.numPages; i++) {
           tasks.push((async () => {
-            const page = await pdf.getPage(pageNum);
-            const viewport = page.getViewport({ scale: 1.0 }); // Slightly lower scale = faster render
+            const page = await pdf.getPage(i);
+            const scale = 1.0;
+            const viewport = page.getViewport({ scale });
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
             canvas.width = viewport.width;
@@ -172,29 +191,25 @@
             wrapper.className = 'image-wrapper';
 
             const img = document.createElement('img');
-            img.src = canvas.toDataURL('image/png');
+            img.src = canvas.toDataURL();
             img.className = 'page-img';
 
             const caption = document.createElement('div');
-            caption.innerText = `${file.name.replace('.pdf', '')} - Page ${pageNum}`;
+            caption.textContent = `${file.name.replace('.pdf', '')} - Page ${i}`;
 
             wrapper.appendChild(img);
             wrapper.appendChild(caption);
             imagesContainer.appendChild(wrapper);
 
-            // Update progress
             processedPages++;
-            const percent = (processedPages / totalPages) * 100;
-            progressBar.style.width = percent + '%';
+            progressBar.style.width = ((processedPages / totalPages) * 100) + '%';
             statusDiv.innerText = `Processing page ${processedPages} of ${totalPages}`;
           })());
         }
-
-        // Await all page renders of this file in parallel
         await Promise.all(tasks);
       }
 
-      statusDiv.innerText = 'Done! All pages processed.';
+      statusDiv.innerText = '✅ All pages processed!';
       progressContainer.style.display = 'none';
     };
   </script>
