@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- SEO Meta Tags -->
   <title>My Tools Website – Free Image & PDF Tools Online</title>
-  <meta name="description" content="My Tools Website offers a collection of free, easy-to-use online tools for image editing, PDF merging, splitting, conversion, and more. Fast, secure, and SEO optimized." />
-  <meta name="keywords" content="Online Tools, Image Tools, PDF Tools, Free Image Compressor, PDF Merger, Resize Image, Convert PDF, Online Utility" />
+
+  <!-- SEO Meta -->
+  <meta name="description" content="Free online tools for editing images, compressing videos, merging PDFs, and more. Fast, secure, and user-friendly tools for productivity." />
+  <meta name="keywords" content="Online Tools, Image Tools, PDF Tools, Resize Image, Compress Video, Free PDF Editor" />
   <meta name="author" content="My Tools Website" />
   <link rel="canonical" href="https://yourdomain.com/" />
 
   <!-- Open Graph -->
   <meta property="og:title" content="My Tools Website – Free Online Image & PDF Tools" />
-  <meta property="og:description" content="Use our suite of free online tools to resize, compress, convert images and manage PDFs quickly and easily." />
+  <meta property="og:description" content="Resize, compress, convert images, split or merge PDFs and compress videos quickly and securely online." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://yourdomain.com/" />
   <meta property="og:image" content="https://yourdomain.com/assets/og-preview.jpg" />
@@ -21,61 +21,88 @@
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="My Tools Website – Free Online Image & PDF Tools" />
-  <meta name="twitter:description" content="Fast, secure, and easy-to-use online image editors and PDF tools." />
+  <meta name="twitter:description" content="A suite of fast, secure online tools for image editing, PDF management, and video compression." />
   <meta name="twitter:image" content="https://yourdomain.com/assets/og-preview.jpg" />
 
   <!-- Favicon -->
   <link rel="icon" href="/favicon.ico" type="image/x-icon" />
 
-  <!-- Schema.org Structured Data -->
+  <!-- Structured Data -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "My Tools Website",
     "url": "https://yourdomain.com/",
-    "description": "Free online tools for image editing, PDF merging, splitting, conversion, and more."
+    "description": "Free tools for resizing images, compressing PDFs, and editing videos online."
   }
   </script>
 
-  <!-- Google Font -->
+  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 
+  <!-- Styles -->
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Poppins', sans-serif; line-height: 1.6; background: #f4f4f4; color: #333; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #f7f9fb;
+      color: #333;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
 
     header {
       background: linear-gradient(90deg, #00b09b, #96c93d);
-      padding: 1.5rem;
-      text-align: center;
       color: white;
+      text-align: center;
+      padding: 2rem 1rem;
+      animation: fadeInDown 0.6s ease-in-out;
     }
+
     header h1 {
       font-size: 2.5rem;
       font-weight: 600;
     }
-    nav { margin-top: 1rem; }
+
+    nav {
+      margin-top: 1rem;
+    }
+
     nav a {
       color: white;
-      text-decoration: none;
       margin: 0 1rem;
+      text-decoration: none;
       font-weight: 500;
+      transition: color 0.3s;
     }
-    nav a:hover { text-decoration: underline; }
 
-    main { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+    nav a:hover {
+      text-decoration: underline;
+    }
+
+    main {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+      animation: fadeInUp 0.8s ease-in-out;
+    }
 
     .section-title {
       text-align: center;
-      margin-bottom: 1.5rem;
       font-size: 2rem;
+      margin-bottom: 1.5rem;
       font-weight: 600;
+      color: #222;
     }
 
     .tools-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
       gap: 1.5rem;
     }
 
@@ -83,14 +110,18 @@
       background: white;
       border-radius: 10px;
       padding: 1rem;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
       text-align: center;
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      opacity: 0;
+      animation: fadeIn 0.8s ease forwards;
     }
+
     .tool-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 4px 18px rgba(0,0,0,0.2);
+      transform: translateY(-6px) scale(1.02);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
     }
+
     .tool-card img {
       width: 100%;
       height: 150px;
@@ -98,37 +129,69 @@
       border-radius: 8px;
       margin-bottom: 1rem;
     }
+
     .tool-card h3 {
-      margin-bottom: 0.8rem;
       font-size: 1.2rem;
-      font-weight: 500;
+      margin-bottom: 0.8rem;
+      color: #111;
     }
+
     .tool-card a {
       display: inline-block;
       padding: 0.6rem 1.2rem;
       background: linear-gradient(90deg, #00b09b, #96c93d);
       color: white;
-      border-radius: 5px;
-      font-weight: 500;
+      border-radius: 6px;
       text-decoration: none;
-      transition: background 0.2s;
+      font-weight: 500;
+      transition: background 0.3s ease;
     }
+
     .tool-card a:hover {
       background: linear-gradient(90deg, #019180, #85b338);
     }
 
-    section:not(:first-of-type) { margin-top: 3rem; }
-
-    footer {
-      background: #333;
-      color: #eee;
-      text-align: center;
-      padding: 1.5rem;
-      margin-top: 4rem;
+    section:not(:first-of-type) {
+      margin-top: 3rem;
     }
 
-    @media(max-width: 768px) {
+    section#about p,
+    section#contact p {
+      max-width: 800px;
+      margin: 0 auto;
+      text-align: center;
+      color: #555;
+      font-size: 1rem;
+    }
+
+    footer {
+      margin-top: 4rem;
+      background-color: #2c2c2c;
+      color: #ddd;
+      text-align: center;
+      padding: 1.5rem;
+      font-size: 0.95rem;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeInDown {
+      0% { opacity: 0; transform: translateY(-20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeInUp {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
       header h1 { font-size: 2rem; }
+      nav a { display: inline-block; margin: 0.5rem 0.7rem; }
       .section-title { font-size: 1.6rem; }
     }
   </style>
@@ -138,8 +201,9 @@
   <header>
     <h1>My Tools Website</h1>
     <nav>
-      <a href="#images-tools">Image Tools</a>
-      <a href="#pdf-tools">PDF Tools</a>
+      <a href="#images-tools">Image</a>
+      <a href="#pdf-tools">PDF</a>
+      <a href="#video-tools">Video</a>
       <a href="#about">About</a>
       <a href="#contact">Contact</a>
     </nav>
@@ -151,19 +215,14 @@
       <h2 class="section-title">Image Tools</h2>
       <div class="tools-grid">
         <div class="tool-card">
-          <img src="https://images.unsplash.com/photo-1593642532973-d31b6557fa68" alt="Resize Image tool" />
+          <img src="https://images.unsplash.com/photo-1593642532973-d31b6557fa68?auto=format&fit=crop&w=600&q=80" alt="Resize Image tool" loading="lazy" />
           <h3>Resize Image</h3>
-          <a href="#">Use Tool</a>
+          <a href="/Tool/img-resize.html">Use Tool</a>
         </div>
         <div class="tool-card">
-          <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb" alt="Compress Image tool" />
+          <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80" alt="Compress Image tool" loading="lazy" />
           <h3>Compress Image</h3>
           <a href="/Tool/img-compress.html">Use Tool</a>
-        </div>
-        <div class="tool-card">
-          <img src="https://images.unsplash.com/photo-1549924231-f129b911e442" alt="Convert Image tool" />
-          <h3>Convert Image</h3>
-          <a href="#">Use Tool</a>
         </div>
       </div>
     </section>
@@ -173,18 +232,37 @@
       <h2 class="section-title">PDF Tools</h2>
       <div class="tools-grid">
         <div class="tool-card">
-          <img src="https://images.unsplash.com/photo-1581090700227-4e1b19ed6b7f" alt="Merge PDFs" />
+          <img src="https://images.unsplash.com/photo-1581090700227-4e1b19ed6b7f?auto=format&fit=crop&w=600&q=80" alt="Merge PDFs" loading="lazy" />
           <h3>Merge PDFs</h3>
           <a href="#">Use Tool</a>
         </div>
         <div class="tool-card">
-          <img src="https://images.unsplash.com/photo-1573164574396-cb89fa8f3c3f" alt="Split PDFs" />
+          <img src="https://images.unsplash.com/photo-1573164574396-cb89fa8f3c3f?auto=format&fit=crop&w=600&q=80" alt="Split PDFs" loading="lazy" />
           <h3>Split PDFs</h3>
           <a href="#">Use Tool</a>
         </div>
+        <!-- Updated icon for PDF Compressor -->
         <div class="tool-card">
-          <img src="https://images.unsplash.com/photo-1549924231-f129b911e442" alt="PDF to Word" />
-          <h3>PDF to Word</h3>
+          <img src="https://images.unsplash.com/photo-1607083201311-0c3f3f4d9ef3?auto=format&fit=crop&w=600&q=80" alt="PDF Compressor" loading="lazy" />
+          <h3>PDF Compressor</h3>
+          <a href="#">Use Tool</a>
+        </div>
+        <!-- New Image to PDF Converter -->
+        <div class="tool-card">
+          <img src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="Image to PDF" loading="lazy" />
+          <h3>Image to PDF</h3>
+          <a href="#">Use Tool</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Video Tools -->
+    <section id="video-tools">
+      <h2 class="section-title">Video Tools</h2>
+      <div class="tools-grid">
+        <div class="tool-card">
+          <img src="https://images.unsplash.com/photo-1613299439624-2a6c4ed4a358?auto=format&fit=crop&w=600&q=80" alt="Video Compressor" loading="lazy" />
+          <h3>Video Compressor</h3>
           <a href="#">Use Tool</a>
         </div>
       </div>
@@ -193,22 +271,22 @@
     <!-- About -->
     <section id="about">
       <h2 class="section-title">About Us</h2>
-      <p style="max-width:800px; margin:0 auto; text-align:center;">
-        Welcome to My Tools Website! We offer a suite of free, easy-to-use online tools for image editing, PDF processing, and more. Save time, work smarter.
+      <p>
+        My Tools Website provides a suite of fast, simple, and free online tools for editing images, working with PDFs, and compressing videos. No sign-up needed.
       </p>
     </section>
 
     <!-- Contact -->
     <section id="contact">
       <h2 class="section-title">Contact Us</h2>
-      <p style="max-width:800px; margin:0 auto; text-align:center;">
-        Questions or suggestions? Reach out at <a href="mailto:info@mytoolswebsite.com">info@mytoolswebsite.com</a>.
+      <p>
+        Have questions or suggestions? Email us at <a href="mailto:chawdakhush666@gmail.com">info@mytoolswebsite.com</a>
       </p>
     </section>
   </main>
 
   <footer>
-    © 2024 My Tools Website. All rights reserved.
+    © 2025 My Tools Website. All rights reserved.
   </footer>
 </body>
 </html>
