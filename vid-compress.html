@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Free Online Video Compressor - No Backend Needed</title>
+  <meta name="description" content="Compress your videos instantly in your browser with our free online video compressor. No upload required! Supports MP4, MOV, AVI." />
+  <meta name="keywords" content="video compressor, online video compression, no backend, browser video compressor" />
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #f7f9fb;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      margin: 0;
+    }
+    header {
+      background: linear-gradient(90deg, #00b09b, #96c93d);
+      color: white;
+      padding: 2rem;
+      text-align: center;
+    }
+    main {
+      flex: 1;
+      max-width: 700px;
+      margin: 2rem auto;
+      padding: 1rem;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+      text-align: center;
+    }
+    h1 {
+      margin: 0 0 1rem 0;
+    }
+    input[type="file"] {
+      margin: 1rem 0;
+      width: 100%;
+    }
+    button {
+      padding: 0.75rem 1.5rem;
+      background: linear-gradient(90deg, #00b09b, #96c93d);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+    button:hover {
+      background: linear-gradient(90deg, #019180, #85b338);
+    }
+    #downloadLink {
+      display: none;
+      margin-top: 1rem;
+    }
+    #status {
+      margin-top: 1rem;
+    }
+    footer {
+      text-align: center;
+      padding: 1rem;
+      background-color: #2c2c2c;
+      color: #ddd;
+    }
+  </style>
+  <!-- Load ffmpeg.wasm -->
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.8/dist/ffmpeg.min.js"></script>
+</head>
+<body>
+<header>
+<h1>Free Browser Video Compressor</h1>
+</header>
+<main>
+<h2>Select a Video to Compress</h2>
+<p>Supports MP4, MOV, AVI. Compress your video instantly without uploading to any server!</p>
+<input type="file" id="videoInput" accept="video/*" />
+<br />
+<button id="compressBtn">Compress Video</button>
+<div id="status"></div>
+<a id="downloadLink" href="#" download="compressed_video.mp4">Download Compressed Video</a>
+</main>
+<footer>
+&copy; 2024 My Tools Website
+</footer>
+<script>
+  const { createFFmpeg, fetchFile } = FFmpeg;
+  const ffmpeg = createFFmpeg({ log: true });
+  
+  const input = document.getElementById('videoInput');
+  const btn = document.getElementById('compressBtn');
+  const statusDiv = document.getElementById('status');
+  const downloadLink = document.getElementById('downloadLink');
+
+  let loaded = false;
+
+  // Load ffmpeg.wasm
+  async function loadFFMPEG() {
+    if (!loaded) {
+      statusDiv.innerHTML = 'Loading video processing engine...';
+      await ffmpeg.load();
+      loaded = true;
+    }
+  }
+
+  btn.onclick = async () => {
+    if (!input.files.length) {
+      alert('Please select a video file.');
+      return;
+    }
+
+    await loadFFMPEG();
+
+    const file = input.files[0];
+    statusDiv.innerHTML = 'Processing...';
+
+    // Write the file to ffmpeg's virtual filesystem
+    ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(file));
+
+    // Run ffmpeg command to reduce quality/size
+    // Adjust bitrate or quality as needed
+    await ffmpeg.run(
+      '-i', 'input.mp4',
+      '-vcodec', 'libx264',
+      '-crf', '28', // Lower value = higher quality, larger size
+      '-preset', 'fast',
+      'output.mp4'
+    );
+
+    // Read the result
+    const data = ffmpeg.FS('readFile', 'output.mp4');
+
+    // Create a Blob URL for download
+    const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+    downloadLink.href = url;
+    downloadLink.style.display = 'inline-block';
+    statusDiv.innerHTML = 'Done! You can now download your compressed video.';
+  };
+</script>
+</body>
+</html>
