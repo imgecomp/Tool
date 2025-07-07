@@ -48,6 +48,11 @@
   button:hover {
     background: linear-gradient(90deg, #019180, #85b338);
   }
+  #status {
+    text-align: center;
+    margin-top: 10px;
+    font-weight: bold;
+  }
   #images-container {
     display: flex;
     flex-wrap: wrap;
@@ -74,6 +79,7 @@
   <input type="file" id="file-input" multiple accept="application/pdf" />
 </div>
 <button id="convert-btn" disabled>Convert PDF to Images</button>
+<div id="status"></div>
 <div id="images-container"></div>
 
 <script>
@@ -82,6 +88,7 @@
   const fileBtn = document.getElementById('file-btn');
   const convertBtn = document.getElementById('convert-btn');
   const imagesContainer = document.getElementById('images-container');
+  const statusDiv = document.getElementById('status');
 
   let selectedFiles = [];
 
@@ -115,30 +122,36 @@
       convertBtn.disabled = true;
     }
     imagesContainer.innerHTML = '';
+    statusDiv.innerText = '';
   }
 
-  // Convert PDF to images
+  // Convert PDF to images with progress indicator
   document.getElementById('convert-btn').onclick = async () => {
-    imagesContainer.innerHTML = ''; // Clear previous images
+    imagesContainer.innerHTML = '';
+    statusDiv.innerText = 'Processing... Please wait.';
+    let totalPages = 0;
+    let processedPages = 0;
+
+    for (const file of selectedFiles) {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      totalPages += pdf.numPages;
+    }
+
     for (const file of selectedFiles) {
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
       for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
         const page = await pdf.getPage(pageNum);
-        const viewport = page.getViewport({ scale: 2 }); // Increase scale for better quality
+        const viewport = page.getViewport({ scale: 1.5 }); // Lower scale for faster rendering (adjust as needed)
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
         canvas.width = viewport.width;
         canvas.height = viewport.height;
 
-        const renderContext = {
-          canvasContext: context,
-          viewport: viewport
-        };
-        await page.render(renderContext).promise;
+        await page.render({ canvasContext: context, viewport: viewport }).promise;
 
-        // Append image to container
         const wrapper = document.createElement('div');
         wrapper.className = 'image-wrapper';
 
@@ -153,8 +166,14 @@
         wrapper.appendChild(img);
         wrapper.appendChild(caption);
         imagesContainer.appendChild(wrapper);
+
+        processedPages++;
+        // Update progress
+        statusDiv.innerText = `Processing page ${processedPages} of ${totalPages}...`;
       }
     }
+    // Done
+    statusDiv.innerText = 'Done! All pages processed.';
   };
 
   // Load pdf.js
