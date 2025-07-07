@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Free PDF Merger - Combine PDFs Online Quickly & Securely</title>
+  
+  <!-- SEO Meta Tags as before -->
+  <meta name="description" content="Merge multiple PDFs easily and securely online with our free PDF Merger tool. No registration required. Fast and reliable." />
+  <meta name="keywords" content="PDF Merger, Combine PDFs, Merge PDF Online, Free PDF Tool, PDF Editor" />
+  <meta name="author" content="My Tools Website" />
+  <link rel="canonical" href="https://yourdomain.com/tools/pdf-merger" />
+
+  <!-- Styles as before -->
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #f7f9fb;
+      margin: 0;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    header {
+      background: linear-gradient(90deg, #00b09b, #96c93d);
+      color: white;
+      padding: 2rem 1rem;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 2.5rem;
+      font-weight: 600;
+    }
+
+    main {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      text-align: center;
+    }
+
+    .page-title {
+      font-size: 2rem;
+      margin-bottom: 1.5rem;
+      font-weight: 600;
+    }
+
+    .description {
+      font-size: 1.1rem;
+      margin-bottom: 2rem;
+      color: #555;
+    }
+
+    .merger-section {
+      background-color: #fff;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+      margin-bottom: 3rem;
+    }
+
+    /* Style for file input */
+    #file-input {
+      margin: 1rem 0;
+    }
+
+    /* Style for button */
+    #mergeBtn {
+      padding: 0.75rem 1.5rem;
+      background: linear-gradient(90deg, #00b09b, #96c93d);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    #mergeBtn:hover {
+      background: linear-gradient(90deg, #019180, #85b338);
+    }
+
+    /* Response message */
+    #response {
+      margin-top: 1rem;
+      font-weight: 600;
+    }
+
+    footer {
+      margin-top: 3rem;
+      padding: 1.5rem;
+      background-color: #2c2c2c;
+      color: #ddd;
+      text-align: center;
+      font-size: 0.95rem;
+    }
+
+    @media(max-width: 768px){
+      header h1 {
+        font-size: 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>PDF Merger Tool</h1>
+  </header>
+  <main>
+    <section class="page-title">Merge PDFs Online for Free</section>
+    <div class="description">
+      Upload your PDFs and click "Merge PDFs Now" to combine them into a single document.
+    </div>
+    <div class="merger-section">
+      <!-- File upload input -->
+      <input type="file" id="file-input" multiple accept="application/pdf" />
+      <!-- Button to trigger merge -->
+      <button id="mergeBtn">Merge PDFs Now</button>
+      <!-- Area to show response or download link -->
+      <div id="response"></div>
+    </div>
+  </main>
+  <footer>
+    &copy; 2024 My Tools Website. All rights reserved.
+  </footer>
+
+  <!-- JavaScript to handle the merge -->
+  <script>
+    document.getElementById('mergeBtn').addEventListener('click', () => {
+      const files = document.getElementById('file-input').files;
+      const responseDiv = document.getElementById('response');
+
+      if (files.length === 0) {
+        responseDiv.innerHTML = 'Please select at least one PDF file.';
+        return;
+      }
+
+      // Prepare form data
+      const formData = new FormData();
+      for (let i = 0; i < files.length; i++) {
+        formData.append('files[]', files[i]);
+      }
+
+      responseDiv.innerHTML = 'Merging PDFs...';
+
+      // Replace the URL below with your actual backend API endpoint that handles PDF merging
+      fetch('https://your-backend-api.com/merge-pdfs', {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => {
+        if (!res.ok) {
+          throw new Error('Error merging PDFs');
+        }
+        return res.blob();
+      })
+      .then(blob => {
+        // Create a download link for the merged PDF
+        const url = URL.createObjectURL(blob);
+        const downloadLink = `<a href="${url}" download="merged.pdf">Download Merged PDF</a>`;
+        responseDiv.innerHTML = downloadLink;
+      })
+      .catch(error => {
+        responseDiv.innerHTML = 'Error: ' + error.message;
+      });
+    });
+  </script>
+</body>
+</html>
