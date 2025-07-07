@@ -3,140 +3,111 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Free Online Video Compressor - No Backend Needed</title>
-  <meta name="description" content="Compress your videos instantly in your browser with our free online video compressor. No upload required! Supports MP4, MOV, AVI." />
-  <meta name="keywords" content="video compressor, online video compression, no backend, browser video compressor" />
-  <style>
-    body {
-      font-family: 'Poppins', sans-serif;
-      background-color: #f7f9fb;
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-      margin: 0;
-    }
-    header {
-      background: linear-gradient(90deg, #00b09b, #96c93d);
-      color: white;
-      padding: 2rem;
-      text-align: center;
-    }
-    main {
-      flex: 1;
-      max-width: 700px;
-      margin: 2rem auto;
-      padding: 1rem;
-      background: #fff;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-      text-align: center;
-    }
-    h1 {
-      margin: 0 0 1rem 0;
-    }
-    input[type="file"] {
-      margin: 1rem 0;
-      width: 100%;
-    }
-    button {
-      padding: 0.75rem 1.5rem;
-      background: linear-gradient(90deg, #00b09b, #96c93d);
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      font-size: 1rem;
-      cursor: pointer;
-      margin-top: 1rem;
-    }
-    button:hover {
-      background: linear-gradient(90deg, #019180, #85b338);
-    }
-    #downloadLink {
-      display: none;
-      margin-top: 1rem;
-    }
-    #status {
-      margin-top: 1rem;
-    }
-    footer {
-      text-align: center;
-      padding: 1rem;
-      background-color: #2c2c2c;
-      color: #ddd;
-    }
-  </style>
-  <!-- Load ffmpeg.wasm -->
+  <title> Video Compressor</title>
+  <meta name="description" content="Compress your videos instantly in your browser. No upload required—MP4, MOV, AVI supported."/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.8/dist/ffmpeg.min.js"></script>
+  <style>
+    body { font-family:'Poppins',sans-serif; background:#f7f9fb; margin:0; display:flex; flex-direction:column; min-height:100vh; }
+    header, footer { text-align:center; color:#fff; background:linear-gradient(90deg,#00b09b,#96c93d); padding:1.5rem; }
+    main { flex:1; max-width:700px; margin:2rem auto; background:#fff; padding:1.5rem; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.06); text-align:center; }
+    h1,h2 { margin:0 0 1rem; }
+    #drop-area { border:2px dashed #ccc; padding:2rem; border-radius:10px; transition:background .3s, border-color .3s; cursor:pointer; margin-bottom:1rem; background:#f9fdfc; }
+    #drop-area.hover { border-color:#00b09b; background:#e0f7f7; }
+    #drop-area p { margin:0; }
+    #drop-area input { display:none; }
+    button { display:block; margin:1rem auto; padding:.75rem 1.5rem; background:linear-gradient(90deg,#00b09b,#96c93d); color:#fff; border:none; border-radius:6px; font-size:1rem; cursor:pointer; transition:background .3s; }
+    button:hover:not(:disabled) { background:linear-gradient(90deg,#019180,#85b338); }
+    button:disabled { opacity:.6; cursor:not-allowed; }
+    #progress-container { width:100%; background:#ddd; border-radius:4px; height:20px; overflow:hidden; display:none; margin-top:1rem; }
+    #progress-bar { height:100%; width:0; background:linear-gradient(90deg,#00b09b,#96c93d); transition:width .2s ease; }
+    #status { margin-top:1rem; font-weight:bold; }
+    #downloadLink { display:none; margin-top:1rem; font-weight:bold; color:#00b09b; text-decoration:none; }
+  </style>
 </head>
 <body>
-<header>
-<h1>Free Browser Video Compressor</h1>
-</header>
-<main>
-<h2>Select a Video to Compress</h2>
-<p>Supports MP4, MOV, AVI. Compress your video instantly without uploading to any server!</p>
-<input type="file" id="videoInput" accept="video/*" />
-<br />
-<button id="compressBtn">Compress Video</button>
-<div id="status"></div>
-<a id="downloadLink" href="#" download="compressed_video.mp4">Download Compressed Video</a>
-</main>
-<footer>
-&copy; 2024 My Tools Website
-</footer>
-<script>
-  const { createFFmpeg, fetchFile } = FFmpeg;
-  const ffmpeg = createFFmpeg({ log: true });
-  
-  const input = document.getElementById('videoInput');
-  const btn = document.getElementById('compressBtn');
-  const statusDiv = document.getElementById('status');
-  const downloadLink = document.getElementById('downloadLink');
+  <header><h1>Free Browser Video Compressor</h1></header>
+  <main>
+    <h2>Select or Drag Your Video</h2>
+    <div id="drop-area">
+      <p>Drag & Drop video here or click to select</p>
+      <input type="file" id="videoInput" accept="video/*" />
+    </div>
+    <button id="compressBtn" disabled>Compress Video</button>
+    <div id="progress-container"><div id="progress-bar"></div></div>
+    <div id="status"></div>
+    <a href="#" id="downloadLink" download="compressed_video.mp4">⬇ Download Compressed Video</a>
+  </main>
+  <footer>© 2024 My Tools Website</footer>
 
-  let loaded = false;
+  <script>
+    const { createFFmpeg, fetchFile } = FFmpeg;
+    const ffmpeg = createFFmpeg({ log: true });
+    let ffmpegLoaded = false;
 
-  // Load ffmpeg.wasm
-  async function loadFFMPEG() {
-    if (!loaded) {
-      statusDiv.innerHTML = 'Loading video processing engine...';
-      await ffmpeg.load();
-      loaded = true;
+    const dropArea = document.getElementById('drop-area');
+    const input = document.getElementById('videoInput');
+    const btn = document.getElementById('compressBtn');
+    const statusDiv = document.getElementById('status');
+    const downloadLink = document.getElementById('downloadLink');
+    const progressContainer = document.getElementById('progress-container');
+    const progressBar = document.getElementById('progress-bar');
+
+    let file = null;
+
+    dropArea.addEventListener('click', () => input.click());
+    input.addEventListener('change', () => selectFile(input.files[0]));
+
+    ['dragenter','dragover'].forEach(e => {
+      dropArea.addEventListener(e, event => { event.preventDefault(); dropArea.classList.add('hover'); });
+    });
+    ['dragleave','drop'].forEach(e => {
+      dropArea.addEventListener(e, event => { event.preventDefault(); dropArea.classList.remove('hover'); });
+    });
+    dropArea.addEventListener('drop', e => {
+      const f = e.dataTransfer.files[0];
+      if (f && f.type.startsWith('video/')) selectFile(f);
+    });
+
+    function selectFile(f) {
+      file = f;
+      dropArea.innerHTML = `<p>File: ${f.name}</p>`;
+      btn.disabled = false;
+      downloadLink.style.display = 'none';
+      statusDiv.innerText = '';
     }
-  }
 
-  btn.onclick = async () => {
-    if (!input.files.length) {
-      alert('Please select a video file.');
-      return;
+    async function loadFFmpeg() {
+      if (!ffmpegLoaded) {
+        statusDiv.innerText = 'Loading video engine...';
+        await ffmpeg.load();
+        ffmpegLoaded = true;
+      }
     }
 
-    await loadFFMPEG();
+    btn.addEventListener('click', async () => {
+      if (!file) return alert('Please select a video.');
+      await loadFFmpeg();
 
-    const file = input.files[0];
-    statusDiv.innerHTML = 'Processing...';
+      ffmpeg.FS('writeFile', 'in.mp4', await fetchFile(file));
+      progressContainer.style.display = 'block';
+      progressBar.style.width = '0';
+      statusDiv.innerText = 'Compressing...';
 
-    // Write the file to ffmpeg's virtual filesystem
-    ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(file));
+      ffmpeg.setProgress(({ ratio }) => {
+        progressBar.style.width = `${(ratio * 100).toFixed(0)}%`;
+      });
 
-    // Run ffmpeg command to reduce quality/size
-    // Adjust bitrate or quality as needed
-    await ffmpeg.run(
-      '-i', 'input.mp4',
-      '-vcodec', 'libx264',
-      '-crf', '28', // Lower value = higher quality, larger size
-      '-preset', 'fast',
-      'output.mp4'
-    );
+      await ffmpeg.run('-i','in.mp4','-vcodec','libx264','-crf','28','-preset','fast','out.mp4');
 
-    // Read the result
-    const data = ffmpeg.FS('readFile', 'output.mp4');
+      const data = ffmpeg.FS('readFile', 'out.mp4');
+      const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
 
-    // Create a Blob URL for download
-    const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
-    downloadLink.href = url;
-    downloadLink.style.display = 'inline-block';
-    statusDiv.innerHTML = 'Done! You can now download your compressed video.';
-  };
-</script>
+      downloadLink.href = url;
+      downloadLink.style.display = 'inline-block';
+      statusDiv.innerText = 'Done! Your compressed video is ready.';
+      progressContainer.style.display = 'none';
+    });
+  </script>
 </body>
 </html>
