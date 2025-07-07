@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Image to PDF Converter - No Backend Needed</title>
+  <meta name="description" content="Convert multiple images into a single PDF directly in your browser. No upload or backend required." />
+  <meta name="keywords" content="image to pdf, online pdf converter, browser pdf generator, frontend only" />
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #f7f9fb;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      margin: 0;
+    }
+    header {
+      background: linear-gradient(90deg, #00b09b, #96c93d);
+      color: white;
+      padding: 2rem;
+      text-align: center;
+    }
+    main {
+      flex: 1;
+      max-width: 700px;
+      margin: 2rem auto;
+      padding: 1rem;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+      text-align: center;
+    }
+    h1 {
+      margin: 0 0 1rem 0;
+    }
+    input[type="file"] {
+      margin: 1rem 0;
+      width: 100%;
+    }
+    button {
+      padding: 0.75rem 1.5rem;
+      background: linear-gradient(90deg, #00b09b, #96c93d);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+    button:hover {
+      background: linear-gradient(90deg, #019180, #85b338);
+    }
+    #downloadLink {
+      display: none;
+      margin-top: 1rem;
+    }
+    #status {
+      margin-top: 1rem;
+    }
+    footer {
+      text-align: center;
+      padding: 1rem;
+      background-color: #2c2c2c;
+      color: #ddd;
+    }
+  </style>
+  <!-- Load pdf-lib library -->
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js"></script>
+</head>
+<body>
+<header>
+<h1>Image to PDF Converter</h1>
+</header>
+<main>
+<h2>Select Images to Convert</h2>
+<p>Select multiple images, and this tool will generate a PDF with each image on a separate page.</p>
+<input type="file" id="imageInput" accept="image/*" multiple />
+<br />
+<button id="convertBtn">Convert to PDF</button>
+<div id="status"></div>
+<a id="downloadLink" href="#" download="images.pdf">Download PDF</a>
+</main>
+<footer>
+&copy; 2024 My Tools Website
+</footer>
+<script>
+  const { PDFDocument, rgb, StandardFonts } = PDFLib;
+
+  const input = document.getElementById('imageInput');
+  const btn = document.getElementById('convertBtn');
+  const statusDiv = document.getElementById('status');
+  const downloadLink = document.getElementById('downloadLink');
+
+  btn.onclick = async () => {
+    if (input.files.length === 0) {
+      alert('Please select at least one image.');
+      return;
+    }
+
+    statusDiv.innerHTML = 'Generating PDF... Please wait.';
+    const files = Array.from(input.files);
+
+    // Create a new PDF document
+    const pdfDoc = await PDFDocument.create();
+
+    for (const file of files) {
+      // Read image as array buffer
+      const imageBytes = await file.arrayBuffer();
+
+      // Determine image type for embedding
+      let embeddedImage;
+      if (file.type === 'image/jpeg' || file.name.endsWith('.jpg') || file.name.endsWith('.jpeg')) {
+        embeddedImage = await pdfDoc.embedJpg(imageBytes);
+      } else if (file.type === 'image/png' || file.name.endsWith('.png')) {
+        embeddedImage = await pdfDoc.embedPng(imageBytes);
+      } else {
+        alert(`Unsupported image format: ${file.name}`);
+        continue;
+      }
+
+      const { width, height } = embeddedImage.scale(1);
+
+      // Add a new page with size matching the image
+      const page = pdfDoc.addPage([width, height]);
+      page.drawImage(embeddedImage, {
+        x: 0,
+        y: 0,
+        width: width,
+        height: height,
+      });
+    }
+
+    // Save the PDF
+    const pdfBytes = await pdfDoc.save();
+
+    // Create a downloadable link
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    downloadLink.href = url;
+    downloadLink.style.display = 'inline-block';
+    statusDiv.innerHTML = 'Your PDF is ready!';
+  };
+</script>
+</body>
+</html>
