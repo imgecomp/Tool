@@ -2,47 +2,199 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title> Video Compressor</title>
-  <meta name="description" content="Compress your videos instantly in your browser. No upload required—MP4, MOV, AVI supported."/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Video Compressor & Converter</title>
+  <meta name="description" content="Compress and convert your videos instantly in your browser. No upload required." />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.8/dist/ffmpeg.min.js"></script>
   <style>
-    body { font-family:'Poppins',sans-serif; background:#f7f9fb; margin:0; display:flex; flex-direction:column; min-height:100vh; }
-    header, footer { text-align:center; color:#fff; background:linear-gradient(90deg,#00b09b,#96c93d); padding:1.5rem; }
-    main { flex:1; max-width:700px; margin:2rem auto; background:#fff; padding:1.5rem; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.06); text-align:center; }
-    h1,h2 { margin:0 0 1rem; }
-    #drop-area { border:2px dashed #ccc; padding:2rem; border-radius:10px; transition:background .3s, border-color .3s; cursor:pointer; margin-bottom:1rem; background:#f9fdfc; }
-    #drop-area.hover { border-color:#00b09b; background:#e0f7f7; }
-    #drop-area p { margin:0; }
-    #drop-area input { display:none; }
-    button { display:block; margin:1rem auto; padding:.75rem 1.5rem; background:linear-gradient(90deg,#00b09b,#96c93d); color:#fff; border:none; border-radius:6px; font-size:1rem; cursor:pointer; transition:background .3s; }
-    button:hover:not(:disabled) { background:linear-gradient(90deg,#019180,#85b338); }
-    button:disabled { opacity:.6; cursor:not-allowed; }
-    #progress-container { width:100%; background:#ddd; border-radius:4px; height:20px; overflow:hidden; display:none; margin-top:1rem; }
-    #progress-bar { height:100%; width:0; background:linear-gradient(90deg,#00b09b,#96c93d); transition:width .2s ease; }
-    #status { margin-top:1rem; font-weight:bold; }
-    #downloadLink { display:none; margin-top:1rem; font-weight:bold; color:#00b09b; text-decoration:none; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f7f9fb;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    header, footer {
+      text-align: center;
+      color: #fff;
+      background: linear-gradient(90deg, #00b09b, #96c93d);
+      padding: 1.5rem;
+      border-radius: 10px;
+      margin: 0.5rem 1rem;
+      font-weight: 600;
+      font-size: 1.25rem;
+      user-select: none;
+    }
+    main {
+      flex: 1;
+      max-width: 700px;
+      margin: 2rem auto 1rem;
+      background: #fff;
+      padding: 1.5rem 2rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+      text-align: center;
+    }
+    h1, h2 {
+      margin: 0 0 1rem 0;
+      font-weight: 600;
+    }
+    label {
+      display: block;
+      margin: 1rem 0 0.25rem 0;
+      font-weight: 600;
+      font-size: 0.95rem;
+      text-align: left;
+      max-width: 300px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    select {
+      max-width: 300px;
+      width: 100%;
+      padding: 0.5rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    #drop-area {
+      border: 2px dashed #ccc;
+      padding: 2rem;
+      border-radius: 10px;
+      transition: background 0.3s, border-color 0.3s;
+      cursor: pointer;
+      margin: 1.5rem 0;
+      background: #f9fdfc;
+      user-select: none;
+    }
+    #drop-area.hover {
+      border-color: #00b09b;
+      background: #e0f7f7;
+    }
+    #drop-area p {
+      margin: 0;
+      font-size: 1.1rem;
+      color: #333;
+    }
+    #drop-area input {
+      display: none;
+    }
+    button {
+      margin: 1.5rem auto 0;
+      padding: 0.75rem 1.5rem;
+      background: linear-gradient(90deg, #00b09b, #96c93d);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s;
+      user-select: none;
+      max-width: 300px;
+      width: 100%;
+    }
+    button:hover:not(:disabled) {
+      background: linear-gradient(90deg, #019180, #85b338);
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    #progress-container {
+      width: 100%;
+      background: #ddd;
+      border-radius: 6px;
+      height: 20px;
+      overflow: hidden;
+      display: none;
+      margin-top: 1.5rem;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    #progress-bar {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #00b09b, #96c93d);
+      transition: width 0.2s ease;
+    }
+    #status {
+      margin-top: 1rem;
+      font-weight: 600;
+      color: #333;
+      min-height: 1.5em;
+      user-select: none;
+    }
+    #downloadLink {
+      display: none;
+      margin-top: 1.2rem;
+      font-weight: 700;
+      color: #00b09b;
+      text-decoration: none;
+      font-size: 1.1rem;
+      user-select: none;
+      max-width: 300px;
+      word-break: break-word;
+      margin-left: auto;
+      margin-right: auto;
+      display: inline-block;
+    }
   </style>
 </head>
 <body>
-  <header><h1> Video Compressor</h1></header>
+
+  <header>
+    Video Compressor & Converter
+  </header>
+
   <main>
     <h2>Select or Drag Your Video</h2>
-    <div id="drop-area">
+
+    <div id="drop-area" tabindex="0" role="button" aria-label="Select or drag video file">
       <p>Drag & Drop video here or click to select</p>
       <input type="file" id="videoInput" accept="video/*" />
     </div>
-    <button id="compressBtn" disabled>Compress Video</button>
-    <div id="progress-container"><div id="progress-bar"></div></div>
-    <div id="status"></div>
-    <a href="#" id="downloadLink" download="compressed_video.mp4">⬇ Download Compressed Video</a>
+
+    <label for="formatSelect">Choose output format:</label>
+    <select id="formatSelect" aria-describedby="formatHelp">
+      <option value="mp4">MP4 (H.264)</option>
+      <option value="webm">WebM (VP8)</option>
+      <option value="avi">AVI (MJPEG)</option>
+      <option value="mov">MOV (H.264)</option>
+    </select>
+
+    <label for="resolutionSelect">Choose output resolution:</label>
+    <select id="resolutionSelect" aria-describedby="resolutionHelp">
+      <option value="original">Original</option>
+      <option value="1920:1080">1080p (1920x1080)</option>
+      <option value="1280:720">720p (1280x720)</option>
+      <option value="854:480">480p (854x480)</option>
+      <option value="640:360">360p (640x360)</option>
+    </select>
+
+    <button id="compressBtn" disabled>Compress & Convert Video</button>
+
+    <div id="progress-container" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div id="progress-bar"></div>
+    </div>
+
+    <div id="status" role="alert" aria-live="polite"></div>
+
+    <a href="#" id="downloadLink" download="compressed_video.mp4" aria-label="Download compressed video">⬇ Download Compressed Video</a>
   </main>
-  <footer>© 2025 My Tools Website</footer>
+
+  <footer>
+    © 2025 My Tools Website
+  </footer>
 
   <script>
     const { createFFmpeg, fetchFile } = FFmpeg;
-    const ffmpeg = createFFmpeg({ log: true });
+    const ffmpeg = createFFmpeg({ log: false });
     let ffmpegLoaded = false;
 
     const dropArea = document.getElementById('drop-area');
@@ -52,30 +204,64 @@
     const downloadLink = document.getElementById('downloadLink');
     const progressContainer = document.getElementById('progress-container');
     const progressBar = document.getElementById('progress-bar');
+    const formatSelect = document.getElementById('formatSelect');
+    const resolutionSelect = document.getElementById('resolutionSelect');
 
     let file = null;
 
-    dropArea.addEventListener('click', () => input.click());
-    input.addEventListener('change', () => selectFile(input.files[0]));
+    // Helpers to update UI
+    function resetUI() {
+      btn.disabled = true;
+      progressContainer.style.display = 'none';
+      progressBar.style.width = '0%';
+      statusDiv.innerText = '';
+      downloadLink.style.display = 'none';
+    }
 
-    ['dragenter','dragover'].forEach(e => {
-      dropArea.addEventListener(e, event => { event.preventDefault(); dropArea.classList.add('hover'); });
-    });
-    ['dragleave','drop'].forEach(e => {
-      dropArea.addEventListener(e, event => { event.preventDefault(); dropArea.classList.remove('hover'); });
-    });
-    dropArea.addEventListener('drop', e => {
-      const f = e.dataTransfer.files[0];
-      if (f && f.type.startsWith('video/')) selectFile(f);
-    });
-
+    // Handle file selection
     function selectFile(f) {
+      if (!f || !f.type.startsWith('video/')) {
+        alert('Please select a valid video file.');
+        return;
+      }
       file = f;
-      dropArea.innerHTML = `<p>File: ${f.name}</p>`;
+      dropArea.innerHTML = `<p>File selected: ${f.name}</p>`;
       btn.disabled = false;
       downloadLink.style.display = 'none';
       statusDiv.innerText = '';
     }
+
+    // Drag and drop events
+    dropArea.addEventListener('click', () => input.click());
+    dropArea.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        input.click();
+      }
+    });
+
+    input.addEventListener('change', () => selectFile(input.files[0]));
+
+    ['dragenter', 'dragover'].forEach(e => {
+      dropArea.addEventListener(e, event => {
+        event.preventDefault();
+        dropArea.classList.add('hover');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(e => {
+      dropArea.addEventListener(e, event => {
+        event.preventDefault();
+        dropArea.classList.remove('hover');
+      });
+    });
+
+    dropArea.addEventListener('drop', e => {
+      const droppedFiles = e.dataTransfer.files;
+      if (droppedFiles.length > 0) {
+        selectFile(droppedFiles[0]);
+      }
+    });
 
     async function loadFFmpeg() {
       if (!ffmpegLoaded) {
@@ -86,28 +272,94 @@
     }
 
     btn.addEventListener('click', async () => {
-      if (!file) return alert('Please select a video.');
+      if (!file) {
+        alert('Please select a video file first.');
+        return;
+      }
+
+      btn.disabled = true;
+      statusDiv.innerText = 'Preparing...';
+      progressContainer.style.display = 'block';
+      progressBar.style.width = '0%';
+      downloadLink.style.display = 'none';
+
       await loadFFmpeg();
 
-      ffmpeg.FS('writeFile', 'in.mp4', await fetchFile(file));
-      progressContainer.style.display = 'block';
-      progressBar.style.width = '0';
-      statusDiv.innerText = 'Compressing...';
+      try {
+        // Write the file to ffmpeg FS
+        await ffmpeg.FS('writeFile', 'infile', await fetchFile(file));
 
-      ffmpeg.setProgress(({ ratio }) => {
-        progressBar.style.width = `${(ratio * 100).toFixed(0)}%`;
-      });
+        const format = formatSelect.value;
+        const resolution = resolutionSelect.value;
 
-      await ffmpeg.run('-i','in.mp4','-vcodec','libx264','-crf','28','-preset','fast','out.mp4');
+        // Prepare ffmpeg args
+        let args = ['-i', 'infile'];
 
-      const data = ffmpeg.FS('readFile', 'out.mp4');
-      const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+        // Resolution scale filter
+        if (resolution !== 'original') {
+          args.push('-vf', `scale=${resolution}`);
+        }
 
-      downloadLink.href = url;
-      downloadLink.style.display = 'inline-block';
-      statusDiv.innerText = 'Done! Your compressed video is ready.';
-      progressContainer.style.display = 'none';
+        // Codec options based on format
+        switch (format) {
+          case 'mp4':
+          case 'mov':
+            args.push('-vcodec', 'libx264');
+            args.push('-preset', 'fast');
+            args.push('-crf', '28');
+            break;
+          case 'webm':
+            args.push('-vcodec', 'libvpx');
+            args.push('-b:v', '1M');
+            break;
+          case 'avi':
+            args.push('-vcodec', 'mjpeg');
+            break;
+          default:
+            args.push('-vcodec', 'libx264');
+        }
+
+        const outputFile = 'out.' + format;
+        args.push(outputFile);
+
+        statusDiv.innerText = 'Compressing & converting video...';
+
+        ffmpeg.setProgress(({ ratio }) => {
+          const percent = Math.min(100, Math.round(ratio * 100));
+          progressBar.style.width = percent + '%';
+          progressContainer.setAttribute('aria-valuenow', percent);
+        });
+
+        await ffmpeg.run(...args);
+
+        const data = ffmpeg.FS('readFile', outputFile);
+        const mimeType = {
+          mp4: 'video/mp4',
+          mov: 'video/mp4', // mov handled as mp4 mime
+          webm: 'video/webm',
+          avi: 'video/avi',
+        }[format] || 'video/mp4';
+
+        const url = URL.createObjectURL(new Blob([data.buffer], { type: mimeType }));
+
+        downloadLink.href = url;
+        downloadLink.download = `compressed_video.${format}`;
+        downloadLink.style.display = 'inline-block';
+
+        statusDiv.innerText = '✅ Done! Your compressed video is ready.';
+
+      } catch (error) {
+        statusDiv.innerText = '❌ Error during processing: ' + error.message;
+      } finally {
+        progressContainer.style.display = 'none';
+        btn.disabled = false;
+      }
     });
+
+    // Initialize UI
+    resetUI();
+
   </script>
+
 </body>
 </html>
