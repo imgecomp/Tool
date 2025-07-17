@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Image to PDF Converter</title>
   <meta name="description" content="Convert multiple images into a single PDF directly in your browser. No upload or backend required." />
   <meta name="keywords" content="image to pdf, online pdf converter, browser pdf generator, frontend only" />
@@ -163,6 +163,51 @@
       flex-shrink: 0;
     }
 
+    /* Form controls container */
+    .options-container {
+      margin-bottom: 1.5rem;
+      text-align: left;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+      user-select: none;
+    }
+    .options-container label {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-weight: 600;
+      font-size: 1rem;
+      color: #333;
+    }
+    .options-container select,
+    .options-container input[type="text"],
+    .options-container input[type="number"] {
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: 1.5px solid #ccc;
+      margin-bottom: 1rem;
+      transition: border-color 0.3s ease;
+      box-sizing: border-box;
+    }
+    .options-container select:focus,
+    .options-container input[type="text"]:focus,
+    .options-container input[type="number"]:focus {
+      border-color: #00b09b;
+      outline: none;
+    }
+    .options-container .checkbox-group {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+      user-select: none;
+    }
+    .options-container .checkbox-group input[type="checkbox"] {
+      margin-right: 0.5rem;
+      cursor: pointer;
+    }
+
     @media (max-width: 600px) {
       main {
         margin: 1.5rem 1rem 3rem;
@@ -174,6 +219,9 @@
       }
       #drop-area {
         padding: 1.5rem;
+      }
+      .options-container {
+        max-width: 100%;
       }
     }
   </style>
@@ -195,6 +243,45 @@
       <input type="file" id="imageInput" accept="image/*" multiple />
     </div>
 
+    <div class="options-container" aria-label="PDF conversion options">
+      <label for="pageSize">Page Size (optional)</label>
+      <select id="pageSize" aria-describedby="pageSizeDesc">
+        <option value="">Auto (image size)</option>
+        <option value="A4">A4 (210 x 297 mm)</option>
+        <option value="Letter">Letter (8.5 x 11 inches)</option>
+        <option value="Legal">Legal (8.5 x 14 inches)</option>
+        <option value="Custom">Custom (enter width & height below)</option>
+      </select>
+      <small id="pageSizeDesc" style="color:#666; font-size:0.85rem;">
+        Select page size, or leave empty for auto image size.
+      </small>
+
+      <label for="orientation">Orientation (optional)</label>
+      <select id="orientation">
+        <option value="portrait">Portrait</option>
+        <option value="landscape">Landscape</option>
+      </select>
+
+      <div id="customDimensions" style="display:none;">
+        <label for="customWidth">Custom Width (points)</label>
+        <input type="number" id="customWidth" min="100" max="2000" placeholder="e.g. 595 (A4 width)" />
+        <label for="customHeight">Custom Height (points)</label>
+        <input type="number" id="customHeight" min="100" max="2000" placeholder="e.g. 842 (A4 height)" />
+        <small style="color:#666; font-size:0.85rem;">Dimensions in PDF points (1 pt ≈ 1/72 inch)</small>
+      </div>
+
+      <div class="checkbox-group">
+        <input type="checkbox" id="pageNumbers" />
+        <label for="pageNumbers">Add Page Numbers (optional)</label>
+      </div>
+
+      <label for="headerText">Header Text (optional)</label>
+      <input type="text" id="headerText" placeholder="Enter header text" />
+
+      <label for="footerText">Footer Text (optional)</label>
+      <input type="text" id="footerText" placeholder="Enter footer text" />
+    </div>
+
     <button id="convertBtn" type="button">Convert to PDF</button>
 
     <div id="progressContainer" aria-live="polite" aria-atomic="true" aria-relevant="all">
@@ -210,7 +297,7 @@
   </footer>
 
   <script>
-    const { PDFDocument } = PDFLib;
+    const { PDFDocument, rgb, StandardFonts } = PDFLib;
 
     const dropArea = document.getElementById('drop-area');
     const input = document.getElementById('imageInput');
@@ -219,6 +306,25 @@
     const downloadLink = document.getElementById('downloadLink');
     const progressContainer = document.getElementById('progressContainer');
     const progressBar = document.getElementById('progressBar');
+    const pageSizeSelect = document.getElementById('pageSize');
+    const orientationSelect = document.getElementById('orientation');
+    const customDimensionsDiv = document.getElementById('customDimensions');
+    const customWidthInput = document.getElementById('customWidth');
+    const customHeightInput = document.getElementById('customHeight');
+    const pageNumbersCheckbox = document.getElementById('pageNumbers');
+    const headerInput = document.getElementById('headerText');
+    const footerInput = document.getElementById('footerText');
+
+    // Show/hide custom dimensions inputs based on page size selection
+    pageSizeSelect.addEventListener('change', () => {
+      if (pageSizeSelect.value === 'Custom') {
+        customDimensionsDiv.style.display = 'block';
+      } else {
+        customDimensionsDiv.style.display = 'none';
+        customWidthInput.value = '';
+        customHeightInput.value = '';
+      }
+    });
 
     // Allow clicking drop-area to open file picker
     dropArea.addEventListener('click', () => input.click());
@@ -246,89 +352,245 @@
       });
     });
 
-    dropArea.addEventListener('drop', (e) => {
-      const files = Array.from(e.dataTransfer.files);
-      const imageFiles = files.filter(file => file.type.startsWith('image/'));
-      if (!imageFiles.length) {
-        notify('⚠️ No valid image files detected.', false);
-        return;
+    dropArea.addEventListener('drop', e => {
+      e.preventDefault();
+      const dt = e.dataTransfer;
+      if (dt.files && dt.files.length > 0) {
+        handleFiles(dt.files);
       }
-      // Append new files to existing input files
-      const currentFiles = Array.from(input.files);
-      const dataTransfer = new DataTransfer();
-
-      currentFiles.forEach(f => dataTransfer.items.add(f));
-      imageFiles.forEach(f => dataTransfer.items.add(f));
-      input.files = dataTransfer.files;
-
-      notify(`Added ${imageFiles.length} image${imageFiles.length > 1 ? 's' : ''}.`, true);
     });
 
-    // Helper notify function
-    function notify(message, isSuccess) {
-      statusDiv.textContent = message;
-      statusDiv.classList.toggle('success', isSuccess);
-      statusDiv.classList.toggle('error', !isSuccess);
+    input.addEventListener('change', () => {
+      if (input.files && input.files.length > 0) {
+        handleFiles(input.files);
+      }
+    });
+
+    let selectedFiles = [];
+
+    function handleFiles(files) {
+      // Filter images only and store in selectedFiles
+      const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+      if (imageFiles.length === 0) {
+        showStatus('No valid image files selected.', 'error');
+        return;
+      }
+      selectedFiles = imageFiles;
+      showStatus(`${selectedFiles.length} image(s) ready for conversion.`, 'success');
+      downloadLink.style.display = 'none';
     }
 
     btn.addEventListener('click', async () => {
-      if (input.files.length === 0) {
-        notify('❗ Please select at least one image to convert.', false);
+      if (selectedFiles.length === 0) {
+        showStatus('Please select at least one image file.', 'error');
         return;
       }
-
-      // Disable button & reset UI
       btn.disabled = true;
+      showStatus('');
+      downloadLink.style.display = 'none';
       progressBar.style.width = '0%';
       progressContainer.style.display = 'block';
-      notify('Processing images...', true);
-      downloadLink.style.display = 'none';
 
       try {
-        const files = Array.from(input.files);
-        const totalFiles = files.length;
-        const pdfDoc = await PDFDocument.create();
-
-        for (let i = 0; i < totalFiles; i++) {
-          const file = files[i];
-          const imageBytes = await file.arrayBuffer();
-          let embeddedImage;
-
-          // Support JPEG and PNG only
-          if (file.type === 'image/jpeg' || file.name.match(/\.(jpe?g)$/i)) {
-            embeddedImage = await pdfDoc.embedJpg(imageBytes);
-          } else if (file.type === 'image/png' || file.name.match(/\.png$/i)) {
-            embeddedImage = await pdfDoc.embedPng(imageBytes);
-          } else {
-            notify(`❗ Unsupported format: ${file.name}`, false);
-            continue; // skip unsupported file
-          }
-
-          const { width, height } = embeddedImage.scale(1);
-          const page = pdfDoc.addPage([width, height]);
-          page.drawImage(embeddedImage, { x: 0, y: 0, width, height });
-
-          const progressPercent = Math.round(((i + 1) / totalFiles) * 100);
-          progressBar.style.width = progressPercent + '%';
-        }
-
-        const pdfBytes = await pdfDoc.save();
-        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-        downloadLink.href = url;
-        downloadLink.style.display = 'inline-block';
-
-        notify('✅ PDF is ready!', true);
+        await createPdf(selectedFiles);
       } catch (err) {
-        notify('❌ Error during conversion. Please try again.', false);
-        console.error(err);
+        showStatus('Error creating PDF: ' + err.message, 'error');
       } finally {
         btn.disabled = false;
-        setTimeout(() => {
-          progressContainer.style.display = 'none';
-        }, 2000);
+        progressContainer.style.display = 'none';
       }
     });
+
+    async function createPdf(files) {
+      const pdfDoc = await PDFDocument.create();
+
+      // Prepare fonts and options
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const fontSize = 10;
+      const headerFontSize = 12;
+      const footerFontSize = 10;
+
+      const addPageNumbers = pageNumbersCheckbox.checked;
+      const headerText = headerInput.value.trim();
+      const footerText = footerInput.value.trim();
+
+      // Determine page size in points (1 pt = 1/72 inch)
+      // Default A4 = 595 x 842 points (portrait)
+      let pageWidth, pageHeight;
+
+      const pageSizeOption = pageSizeSelect.value;
+      const orientation = orientationSelect.value;
+
+      // Sizes in points for convenience
+      const sizes = {
+        A4: { width: 595, height: 842 },
+        Letter: { width: 612, height: 792 },
+        Legal: { width: 612, height: 1008 }
+      };
+
+      // If custom selected, get from inputs
+      if (pageSizeOption === 'Custom') {
+        const w = parseInt(customWidthInput.value, 10);
+        const h = parseInt(customHeightInput.value, 10);
+        if (!w || !h || w < 100 || h < 100) {
+          showStatus('Please enter valid custom width and height (>=100 points).', 'error');
+          return;
+        }
+        pageWidth = w;
+        pageHeight = h;
+      } else if (sizes[pageSizeOption]) {
+        pageWidth = sizes[pageSizeOption].width;
+        pageHeight = sizes[pageSizeOption].height;
+      }
+
+      // We'll handle each page individually if auto sizing
+      // Otherwise page size is fixed
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+
+        // Read image as array buffer
+        const arrayBuffer = await file.arrayBuffer();
+
+        // Detect image type for pdf-lib embedding
+        let image;
+        let imgDims = {};
+
+        // We embed images differently depending on type
+        if (file.type === 'image/jpeg' || file.type === 'image/jpg') {
+          image = await pdfDoc.embedJpg(arrayBuffer);
+          imgDims = image.scale(1);
+        } else if (file.type === 'image/png') {
+          image = await pdfDoc.embedPng(arrayBuffer);
+          imgDims = image.scale(1);
+        } else {
+          // fallback: treat as png
+          image = await pdfDoc.embedPng(arrayBuffer);
+          imgDims = image.scale(1);
+        }
+
+        // Determine page dimensions
+        let pw, ph;
+
+        if (!pageWidth || !pageHeight) {
+          // Auto page size - use image size + some margin
+          pw = imgDims.width + 20;
+          ph = imgDims.height + 60; // leave space for header/footer/page number
+          if (orientation === 'landscape' && ph > pw) {
+            [pw, ph] = [ph, pw];
+          }
+        } else {
+          // Fixed page size
+          if (orientation === 'portrait') {
+            pw = pageWidth;
+            ph = pageHeight;
+          } else {
+            pw = pageHeight;
+            ph = pageWidth;
+          }
+        }
+
+        const page = pdfDoc.addPage([pw, ph]);
+
+        // Draw header text
+        if (headerText) {
+          page.drawText(headerText, {
+            x: 30,
+            y: ph - headerFontSize - 10,
+            size: headerFontSize,
+            font,
+            color: rgb(0, 0, 0),
+          });
+        }
+
+        // Draw footer text
+        if (footerText) {
+          page.drawText(footerText, {
+            x: 30,
+            y: 20,
+            size: footerFontSize,
+            font,
+            color: rgb(0, 0, 0),
+          });
+        }
+
+        // Draw page number
+        if (addPageNumbers) {
+          const pageNumText = `Page ${i + 1} of ${files.length}`;
+          const textWidth = font.widthOfTextAtSize(pageNumText, fontSize);
+          page.drawText(pageNumText, {
+            x: pw - textWidth - 30,
+            y: 20,
+            size: fontSize,
+            font,
+            color: rgb(0, 0, 0),
+          });
+        }
+
+        // Calculate image dimensions to fit page with margin
+        const margin = 30;
+        const maxWidth = pw - margin * 2;
+        const maxHeight = ph - margin * 3 - (headerText ? headerFontSize + 10 : 0) - (footerText || addPageNumbers ? footerFontSize + 20 : 0);
+
+        let imgWidth = imgDims.width;
+        let imgHeight = imgDims.height;
+
+        // Scale image to fit inside maxWidth/maxHeight
+        const widthScale = maxWidth / imgWidth;
+        const heightScale = maxHeight / imgHeight;
+        const scale = Math.min(widthScale, heightScale, 1);
+
+        imgWidth = imgWidth * scale;
+        imgHeight = imgHeight * scale;
+
+        const x = (pw - imgWidth) / 2;
+        let y = (ph - imgHeight) / 2;
+
+        // Adjust y if header/footer present
+        if (headerText) {
+          y = Math.min(y, ph - imgHeight - margin - headerFontSize - 10);
+        }
+        if (footerText || addPageNumbers) {
+          y = Math.max(y, margin + footerFontSize + 20);
+        }
+
+        // Draw image centered
+        page.drawImage(image, {
+          x,
+          y,
+          width: imgWidth,
+          height: imgHeight,
+        });
+
+        // Update progress
+        const percent = Math.round(((i + 1) / files.length) * 100);
+        progressBar.style.width = percent + '%';
+        progressBar.setAttribute('aria-valuenow', percent);
+        progressBar.setAttribute('aria-valuemin', 0);
+        progressBar.setAttribute('aria-valuemax', 100);
+      }
+
+      const pdfBytes = await pdfDoc.save();
+
+      // Create download link blob
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+
+      downloadLink.href = url;
+      downloadLink.style.display = 'inline-block';
+
+      showStatus('PDF created successfully!', 'success');
+    }
+
+    function showStatus(message, type) {
+      statusDiv.textContent = message;
+      statusDiv.className = '';
+      if (type === 'error') {
+        statusDiv.classList.add('error');
+      } else if (type === 'success') {
+        statusDiv.classList.add('success');
+      }
+    }
   </script>
 </body>
 </html>
