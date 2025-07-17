@@ -20,12 +20,21 @@
       min-height: 100vh;
     }
 
-    header, footer {
-      background: linear-gradient(to right, #00b09b, #96c93d);
-      color: white;
-      text-align: center;
-      padding: 1.5rem;
-    }
+    header {
+  background: linear-gradient(to right, #00b09b, #96c93d);
+  color: white;
+  text-align: center;
+  padding: 1.5rem;
+  border-radius: 0 0 12px 12px; /* Rounded bottom corners */
+}
+
+footer {
+  background: linear-gradient(to right, #00b09b, #96c93d);
+  color: white;
+  text-align: center;
+  padding: 1.5rem;
+  border-radius: 12px 12px 0 0; /* Rounded top corners */
+}
 
     main {
       flex: 1;
