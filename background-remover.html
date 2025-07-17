@@ -1,271 +1,166 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <title>Background Modifier • My Tools Website</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
-  <script src="https://unpkg.com/@tensorflow/tfjs@3.12.0/dist/tf.min.js"></script>
-  <script src="https://unpkg.com/@tensorflow-models/body-pix"></script>
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Poppins',sans-serif;background:#f5f7fa;color:#333;
-      display:flex;flex-direction:column;align-items:center;min-height:100vh}
-    header, footer{background:linear-gradient(90deg,#00b09b,#96c93d);
-      color:white;text-align:center;padding:1.5rem;width:100%;max-width:900px;
-      border-radius:12px;font-size:1.5rem;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,0.1)}
-    footer{font-size:1rem;margin-top:auto}
-    main{background:white;flex:1;width:100%;max-width:900px;margin:1rem;padding:2rem;
-      border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);text-align:center;position:relative}
-    #drop-area{border:2px dashed #00b09b;border-radius:10px;padding:2rem;
-      background:#f9fdfc;cursor:pointer;transition:background .3s;position:relative}
-    #drop-area.hover{background:#e0f7f7}
-    #drop-area p{font-size:1rem;color:#555}
-    input[type=file]{display:none}
-    .options{margin:1rem 0;display:flex;flex-wrap:wrap;justify-content:center;gap:1rem;font-weight:600}
-    .options > *{cursor:pointer}
-    .controls{display:flex;justify-content:center;align-items:center;gap:1rem;margin:1rem 0}
-    .controls input[type=range]{width:150px}
-    button{background:linear-gradient(90deg,#00b09b,#96c93d);color:white;border:none;
-      border-radius:30px;padding:.75rem 1.5rem;font-weight:600;cursor:pointer;
-      transition:transform .2s;margin:0 .5rem;box-shadow:0 4px 12px rgba(0,0,0,0.1)}
-    button:disabled{opacity:.6;cursor:not-allowed}
-    button:hover:not(:disabled){transform:translateY(-2px)}
-    canvas{max-width:100%;border:1px solid #ddd;border-radius:6px}
-    .status{margin:1rem;font-weight:600;min-height:1.2em}
-    .status.success{color:#27ae60}
-    .status.error{color:#c0392b}
-    .compare{position:relative;display:inline-block;margin:1rem auto}
-    .compare img{max-width:100%;display:block;border-radius:6px}
-    .compare .slider{position:absolute;top:0;left:0;bottom:0;width:50%;
-      overflow:hidden;border-right:2px solid white;}
-    .compare .handle{position:absolute;top:0;left:50%;height:100%;
-      width:2px;background:white;cursor:ew-resize;}
-  </style>
+<meta charset="UTF-8"/>
+<title>Background Modifier • My Tools Website</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/@tensorflow/tfjs@3.12.0/dist/tf.min.js"></script>
+<script src="https://unpkg.com/@tensorflow-models/body-pix"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Poppins',sans-serif;background:#f5f7fa;color:#333;
+    display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:1rem}
+  header, footer{background:linear-gradient(90deg,#00b09b,#96c93d);
+    color:white;text-align:center;padding:1.5rem;width:100%;max-width:900px;
+    border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1)}
+  footer{margin-top:auto;padding-bottom:1.5rem}
+  main{background:white;width:100%;max-width:900px;margin:1rem 0;padding:2rem;
+    border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);text-align:center}
+  #drop-area{border:2px dashed #00b09b;border-radius:10px;padding:2rem;
+    background:#f9fdfc;cursor:pointer;width:100%;transition:background .3s}
+  #drop-area.hover{background:#e0f7f7}
+  #drop-area p{color:#555;margin-bottom:.5rem}
+  input[type=file]{display:none}
+  .options,.controls{display:flex;flex-wrap:wrap;justify-content:center;gap:1rem;margin:1rem 0}
+  .options label,.controls button{cursor:pointer}
+  button{background:linear-gradient(90deg,#00b09b,#96c93d);
+    color:white;border:none;border-radius:30px;padding:.75rem 1.5rem;
+    font-weight:600;transition:transform .2s;box-shadow:0 4px 12px rgba(0,0,0,0.1)}
+  button:disabled{opacity:.6;cursor:not-allowed}
+  button:hover:not(:disabled){transform:translateY(-2px)}
+  canvas{max-width:100%;border:1px solid #ddd;border-radius:6px;margin-top:1rem}
+  .status{margin:1rem;font-weight:600;min-height:1.2em}
+  .status.success{color:#27ae60}
+  .status.error{color:#c0392b}
+  @media(max-width:600px){
+    button,input[type=range]{width:100%;max-width:350px}
+  }
+</style>
 </head>
 <body>
 
 <header>Background Modifier</header>
 <main>
   <div id="drop-area">
-    <p>Drag & drop an image or <button id="file-btn" type="button">Select Image</button></p>
+    <p>Drag & Drop an image or</p>
+    <button id="file-btn">Select Image</button>
     <input type="file" id="file-input" accept="image/*"/>
   </div>
 
   <div class="options">
-    <label><input type="radio" name="mode" value="remove" checked> Remove BG</label>
-    <label><input type="radio" name="mode" value="blur"> Blur BG</label>
-    <label><input type="checkbox" id="freehand"> Freehand Erase</label>
-    <label><input type="file" id="bg-replace" accept="image/*"> Replace BG</label>
-    <label>Brush size: <span id="brushSizeVal">20</span>px</label>
-    <input type="range" id="brushSize" min="5" max="100" value="20"/>
+    <label><input type="radio" name="mode" value="person" checked> Remove Person</label>
+    <label><input type="radio" name="mode" value="background"> Remove Background</label>
+    <label><input type="radio" name="mode" value="blur"> Blur Background</label>
   </div>
 
   <div class="controls">
-    <button id="undoBtn" disabled>Undo</button>
-    <button id="redoBtn" disabled>Redo</button>
     <button id="processBtn" disabled>Process</button>
     <button id="downloadBtn" disabled>Download PNG</button>
   </div>
 
   <div class="status" id="status"></div>
-
-  <div class="compare" id="compareContainer" style="display:none;">
-    <img id="originalImg"/>
-    <div class="slider"><img id="processedImg"/></div>
-    <div class="handle"></div>
-  </div>
-
   <canvas id="canvas" style="display:none;"></canvas>
 </main>
 <footer>© 2025 MyToolsWebsite. All rights reserved.</footer>
 
 <script>
 (async()=>{
+  const bodyPixOptions = {
+    architecture: 'MobileNetV1',
+    outputStride: 16,
+    multiplier: 0.50,
+    quantBytes: 2
+  };
 
-  const fileInput=document.getElementById('file-input'),
-        fileBtn=document.getElementById('file-btn'),
-        drop=document.getElementById('drop-area'),
-        modeInputs=document.querySelectorAll('input[name="mode"]'),
-        freehandCb=document.getElementById('freehand'),
-        brushSize=document.getElementById('brushSize'),
-        brushVal=document.getElementById('brushSizeVal'),
-        bgReplace=document.getElementById('bg-replace'),
-        processBtn=document.getElementById('processBtn'),
-        undoBtn=document.getElementById('undoBtn'),
-        redoBtn=document.getElementById('redoBtn'),
-        downloadBtn=document.getElementById('downloadBtn'),
-        status=document.getElementById('status'),
-        canvas=document.getElementById('canvas'),
-        ctx=canvas.getContext('2d'),
-        compareContainer=document.getElementById('compareContainer'),
-        origImgEl=document.getElementById('originalImg'),
-        procImgEl=document.getElementById('processedImg');
+  const fileBtn = document.getElementById('file-btn');
+  const fileInput = document.getElementById('file-input');
+  const dropArea = document.getElementById('drop-area');
+  const processBtn = document.getElementById('processBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const statusEl = document.getElementById('status');
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  let img = new Image(), net = null, mode = 'person';
 
-  let img=new Image(), mode='remove', net=null,
-      history=[], future=[];
+  const setStatus = (msg, ok=true) => {
+    statusEl.textContent = msg;
+    statusEl.className = 'status ' + (ok?'success':'error');
+  };
 
-  const setStatus=(m, ok)=>{status.textContent=m;status.className='status '+(ok?'success':'error')};
+  // File selection
+  fileBtn.onclick = () => fileInput.click();
+  fileInput.onchange = e => loadImage(e.target.files[0]);
+  ['dragenter','dragover'].forEach(e=>dropArea.addEventListener(e,ev=>{ev.preventDefault();dropArea.classList.add('hover')}));
+  ['dragleave','drop'].forEach(e=>dropArea.addEventListener(e,ev=>{ev.preventDefault();dropArea.classList.remove('hover')}));
+  dropArea.addEventListener('drop',ev=>{loadImage(ev.dataTransfer.files[0]);});
 
-  fileBtn.onclick=()=>fileInput.click();
-  drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('hover')});
-  drop.addEventListener('dragleave',()=>drop.classList.remove('hover'));
-  drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('hover');loadImage(e.dataTransfer.files[0])});
+  // Mode change
+  document.querySelectorAll('input[name="mode"]').forEach(r => {
+    r.addEventListener('change', () => mode = r.value);
+  });
 
-  fileInput.onchange=e=>loadImage(e.target.files[0]);
-  modeInputs.forEach(r=>r.onchange=()=>mode=r.value);
-  brushSize.oninput=()=>brushVal.textContent=brushSize.value;
-  bgReplace.onchange=e=>loadBGReplace(e.target.files[0]);
-
-  processBtn.onclick=processImage;
-  undoBtn.onclick=undo;
-  redoBtn.onclick=redo;
-  downloadBtn.onclick=downloadImage;
-
-  function loadImage(file){
-    if(!file||!file.type.startsWith('image/')){setStatus('Select a valid image.',false);return;}
-    const url=URL.createObjectURL(file);
-    img=new Image();
-    img.onload=()=>{
-      canvas.width=img.width; canvas.height=img.height;
-      ctx.clearRect(0,0,canvas.width,canvas.height); ctx.globalCompositeOperation='source-over';
-      ctx.drawImage(img,0,0);
-      origImgEl.src=canvas.toDataURL();
-      compareContainer.style.display='none';
-      processBtn.disabled=false; downloadBtn.disabled=true;
-      undoHistoryReset();
-      setStatus('',true);
+  async function loadImage(file){
+    if(!file || !file.type.startsWith('image/')) {setStatus('Invalid image file!', false); return;}
+    setStatus('Loading image...', true);
+    const url = URL.createObjectURL(file);
+    img = new Image();
+    img.onload = () => {
+      // Downscale for performance
+      const maxW = Math.min(800, img.width);
+      const scale = maxW / img.width;
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      processBtn.disabled = false;
+      downloadBtn.disabled = true;
+      setStatus('Image ready', true);
     };
-    img.src=url;
+    img.src = url;
   }
 
-  let bgImg=null;
-  function loadBGReplace(file){
-    if(!file||!file.type.startsWith('image/')){setStatus('Select a valid background image.',false);return;}
-    bgImg=new Image();
-    bgImg.onload=()=>setStatus('BG loaded',true);
-    bgImg.src=URL.createObjectURL(file);
-  }
-
-  async function processImage(){
-    processBtn.disabled=undoBtn.disabled=redoBtn.disabled=redoBtn.disabled=true;
-    setStatus('Loading model...',true);
-    if(!net) net=await bodyPix.load();
-    setStatus('Processing...',true);
-    const w=canvas.width, h=canvas.height;
-    const seg=await net.segmentPerson(canvas,{internalResolution:'medium',segmentationThreshold:0.7});
-    const mask=seg.data;
-    const orig=ctx.getImageData(0,0,w,h);
-    const out=ctx.createImageData(w,h);
-
-    if(mode==='remove'){
-      for(let i=0;i<mask.length;i++){
-        out.data[i*4]=orig.data[i*4];
-        out.data[i*4+1]=orig.data[i*4+1];
-        out.data[i*4+2]=orig.data[i*4+2];
-        out.data[i*4+3]=mask[i]*255;
+  processBtn.onclick = async ()=>{
+    processBtn.disabled = true;
+    setStatus('Loading model...', true);
+    if(!net) net = await bodyPix.load(bodyPixOptions);
+    setStatus('Segmenting...', true);
+    const seg = await net.segmentPerson(canvas, {internalResolution:'low'});
+    setStatus('Applying effect...', true);
+    const imgData = ctx.getImageData(0,0,canvas.width, canvas.height);
+    const out = ctx.createImageData(canvas.width, canvas.height);
+    for(let i=0;i<seg.data.length;i++){
+      const p=i*4, m=seg.data[i]>0.5;
+      if(mode==='person'){
+        out.data[p] = imgData.data[p]; out.data[p+1] = imgData.data[p+1];
+        out.data[p+2] = imgData.data[p+2];
+        out.data[p+3] = m ? 0 : imgData.data[p+3];
+      } else if(mode==='background'){
+        out.data[p] = imgData.data[p]; out.data[p+1] = imgData.data[p+1];
+        out.data[p+2] = imgData.data[p+2];
+        out.data[p+3] = m ? imgData.data[p+3] : 0;
+      } else {
+        ctx.filter = 'blur(10px)';
+        ctx.drawImage(canvas,0,0);
+        ctx.filter = 'none';
+        const blurData = ctx.getImageData(0,0,canvas.width, canvas.height);
+        out.data[p] = m ? imgData.data[p] : blurData.data[p];
+        out.data[p+1] = m ? imgData.data[p+1] : blurData.data[p+1];
+        out.data[p+2] = m ? imgData.data[p+2] : blurData.data[p+2];
+        out.data[p+3] = imgData.data[p+3];
       }
-      ctx.clearRect(0,0,w,h); ctx.putImageData(out,0,0);
-    } else {
-      ctx.filter='blur(10px)'; ctx.drawImage(canvas,0,0);
-      ctx.filter='none';
-      const blurred=ctx.getImageData(0,0,w,h);
-      for(let i=0;i<mask.length;i++){
-        const a=mask[i], p=i*4;
-        orig.data[p]=a*orig.data[p]+(1-a)*blurred.data[p];
-        orig.data[p+1]=a*orig.data[p+1]+(1-a)*blurred.data[p+1];
-        orig.data[p+2]=a*orig.data[p+2]+(1-a)*blurred.data[p+2];
-      }
-      ctx.putImageData(orig,0,0);
     }
-
-    if(bgImg){
-      const bgCanvas=document.createElement('canvas');
-      bgCanvas.width=w; bgCanvas.height=h;
-      const bgCtx=bgCanvas.getContext('2d');
-      bgCtx.drawImage(bgImg,0,0,w,h);
-      const base=ctx.getImageData(0,0,w,h);
-      for(let i=0;i<mask.length;i++){
-        const p=i*4;
-        if(mask[i]<1){
-          base.data[p]=bgCtx.getImageData(0,0,1,1).data[p];
-          base.data[p+1]=bgCtx.getImageData(0,0,1,1).data[p+1];
-          base.data[p+2]=bgCtx.getImageData(0,0,1,1).data[p+2];
-          base.data[p+3]=255;
-        }
-      }
-      ctx.putImageData(base,0,0);
-    }
-
-    saveHistory();
-    setupCompare();
-    downloadBtn.disabled=false;
-    setStatus('Done ✅',true);
-  }
-
-  function saveHistory(){
-    history.push(canvas.toDataURL());
-    undoBtn.disabled=false;
-    future=[];
-    redoBtn.disabled=true;
-  }
-
-  function undo(){
-    if(history.length<2)return;
-    future.unshift(history.pop());
-    const imgsrc=history[history.length-1];
-    restore(imgsrc);
-    undoBtn.disabled=history.length<2;
-    redoBtn.disabled=false;
-  }
-
-  function redo(){
-    if(!future.length)return;
-    const imgsrc=future.shift();
-    history.push(imgsrc);
-    restore(imgsrc);
-    undoBtn.disabled=history.length<2;
-    redoBtn.disabled=!future.length;
-  }
-
-  function restore(src){
-    const i=new Image();
-    i.onload=()=>ctx.drawImage(i,0,0);
-    i.src=src;
-  }
-
-  function downloadImage(){
-    const link=document.createElement('a');
-    link.href=canvas.toDataURL('image/png');
-    link.download='background.png';
-    link.click();
-  }
-
-  function undoHistoryReset(){
-    history=[]; future=[]; undoBtn.disabled=true; redoBtn.disabled=true;
-    saveHistory();
-  }
-
-  function setupCompare(){
-    origImgEl.src=history[0];
-    procImgEl.src=canvas.toDataURL();
-    compareContainer.style.display='block';
-    const slider=compareContainer.querySelector('.slider'), handle=compareContainer.querySelector('.handle');
-    const w=procImgEl.width;
-    handle.style.left=w/2+'px'; slider.style.width=w/2+'px';
-    handle.onmousedown=e=>{
-      e.preventDefault();
-      document.onmousemove=move;
-      document.onmouseup=()=>document.onmousemove=null;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.putImageData(out,0,0);
+    setStatus('Done ✅', true);
+    downloadBtn.disabled = false;
+    downloadBtn.onclick = ()=>{
+      const a = document.createElement('a');
+      a.href = canvas.toDataURL('image/png');
+      a.download = 'bg_modified.png';
+      a.click();
     };
-    function move(e){
-      const rect=compareContainer.getBoundingClientRect();
-      let x=e.clientX-rect.left;
-      x=Math.max(0,Math.min(x,rect.width));
-      slider.style.width=x+'px';
-      handle.style.left=x+'px';
-    }
-  }
+  };
 })();
 </script>
 
