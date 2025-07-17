@@ -1,128 +1,272 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Merge PDFs </title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
-<script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
-<style>
-  body { font-family:'Poppins',sans-serif; background:#f7f9fb; padding:2rem; color:#333; }
-  h1 {
-      background: linear-gradient(to right, #00b09b, #96c93d);
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Merge PDFs</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to bottom right, #f4f7f6, #ffffff);
+      color: #333;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: linear-gradient(90deg, #00b09b, #96c93d);
       color: white;
       text-align: center;
-      padding: 1.5rem;
+      padding: 2rem 1rem;
+      border-radius: 0 0 20px 20px;
     }
-  #drop-area { border:2px dashed #ccc; padding:2rem; border-radius:10px; text-align:center; margin-bottom:1rem; cursor:pointer; transition:background .3s, border-color .3s; }
-  #drop-area.hover { border-color:#00b09b; background-color:#e0f7f7; }
-  #drop-area p { margin:0; font-size:1rem; }
-  input[type="file"] { display:none; }
-  button { display:block; margin:1rem auto; padding:.75rem 1.5rem; background:linear-gradient(90deg,#00b09b,#96c93d); color:#fff; border:none; border-radius:6px; font-size:1rem; cursor:pointer; transition:background .3s; }
-  button:hover:not(:disabled) { background:linear-gradient(90deg,#019180,#85b338); }
-  button:disabled { opacity:0.6; cursor:not-allowed; }
-  #progressContainer { width:100%; background:#ddd; border-radius:4px; height:20px; display:none; margin-top:1rem; }
-  #progressBar { width:0%; height:100%; background:#4caf50; transition:width .2s ease; }
-</style>
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 600;
+    }
+
+    main {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 2rem;
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    }
+
+    #drop-area {
+      border: 2px dashed #00b09b;
+      padding: 2rem;
+      border-radius: 12px;
+      text-align: center;
+      margin-bottom: 1.5rem;
+      transition: background 0.3s, border-color 0.3s;
+      cursor: pointer;
+      background: #f9f9f9;
+    }
+
+    #drop-area.hover {
+      background-color: #e0f7f7;
+      border-color: #00b09b;
+    }
+
+    #drop-area p {
+      font-size: 1rem;
+      font-weight: 500;
+      color: #555;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    button {
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      border-radius: 30px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      background: linear-gradient(to right, #019180, #85b338);
+    }
+
+    button:disabled {
+      background: #bbb;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    #progressContainer {
+      width: 100%;
+      background: #ddd;
+      border-radius: 4px;
+      height: 20px;
+      display: none;
+      margin-top: 1.5rem;
+      overflow: hidden;
+    }
+
+    #progressBar {
+      width: 0%;
+      height: 100%;
+      background: #4caf50;
+      transition: width 0.3s ease;
+    }
+
+    #merge-btn {
+      display: block;
+      margin: 1.5rem auto 0;
+    }
+
+    #statusMessage {
+      margin-top: 1rem;
+      text-align: center;
+      font-weight: 600;
+      font-size: 1rem;
+      color: #c0392b;
+    }
+
+    #statusMessage.success {
+      color: #27ae60;
+    }
+
+    footer {
+      margin-top: auto;
+      text-align: center;
+      font-size: 0.9rem;
+      padding: 1.5rem 1rem;
+      color: white;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      border-radius: 20px 20px 0 0;
+    }
+
+    @media (max-width: 600px) {
+      header h1 {
+        font-size: 1.5rem;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  </style>
 </head>
 <body>
-<h1>Merge PDFs </h1>
-<div id="drop-area">
-  <p>Drag & Drop PDF files here or <button id="file-btn">Select Files</button></p>
-  <input type="file" id="file-input" multiple accept="application/pdf" />
-</div>
-<button id="merge-btn" disabled>Merge PDFs</button>
-<div id="progressContainer"><div id="progressBar"></div></div>
 
-<script>
-const dropArea = document.getElementById('drop-area');
-const fileInput = document.getElementById('file-input');
-const fileBtn = document.getElementById('file-btn');
-const mergeBtn = document.getElementById('merge-btn');
-const progressContainer = document.getElementById('progressContainer');
-const progressBar = document.getElementById('progressBar');
-let files = [];
+  <header>
+    <h1>Merge PDFs</h1>
+  </header>
 
-// Click & selection
-fileBtn.onclick = () => fileInput.click();
+  <main>
+    <div id="drop-area">
+      <p>Drag & Drop PDF files here or <button id="file-btn">Select Files</button></p>
+      <input type="file" id="file-input" multiple accept="application/pdf" />
+    </div>
 
-// Drag & Drop UI
-['dragenter','dragover'].forEach(evt => {
-  dropArea.addEventListener(evt, e => {
-    e.preventDefault(); dropArea.classList.add('hover');
-  });
-});
-['dragleave','drop'].forEach(evt => {
-  dropArea.addEventListener(evt, e => {
-    e.preventDefault(); dropArea.classList.remove('hover');
-  });
-});
+    <button id="merge-btn" disabled>Merge PDFs</button>
 
-dropArea.addEventListener('drop', e => {
-  const dropped = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
-  if (dropped.length) {
-    files = dropped;
-    updateUI();
-  }
-});
+    <div id="progressContainer"><div id="progressBar"></div></div>
 
-// File selection via input
-fileInput.onchange = () => {
-  files = Array.from(fileInput.files);
-  updateUI();
-};
+    <div id="statusMessage"></div>
+  </main>
 
-function updateUI(){
-  if (files.length) {
-    mergeBtn.disabled = false;
-    dropArea.innerHTML = `<p>${files.length} PDF file(s) ready to merge.</p><button id="file-btn">Select More</button>`;
-    document.getElementById('file-btn').onclick = () => fileInput.click();
-  } else {
-    mergeBtn.disabled = true;
-    dropArea.innerHTML = `<p>Drag & Drop PDF files here or <button id="file-btn">Select Files</button></p>`;
-    document.getElementById('file-btn').onclick = () => fileInput.click();
-  }
-}
+  <footer>
+    © 2025 MyToolsWebsite. All rights reserved.
+  </footer>
 
-mergeBtn.onclick = async () => {
-  if (files.length < 2) {
-    alert('Please select at least two PDF files.');
-    return;
-  }
+  <script>
+    const dropArea = document.getElementById('drop-area');
+    const fileInput = document.getElementById('file-input');
+    const fileBtn = document.getElementById('file-btn');
+    const mergeBtn = document.getElementById('merge-btn');
+    const progressContainer = document.getElementById('progressContainer');
+    const progressBar = document.getElementById('progressBar');
+    const statusMessage = document.getElementById('statusMessage');
+    let files = [];
 
-  mergeBtn.disabled = true;
-  progressContainer.style.display = 'block';
-  progressBar.style.width = '0%';
+    // Button click opens file dialog
+    fileBtn.onclick = () => fileInput.click();
 
-  try {
-    const mergedPdf = await PDFLib.PDFDocument.create();
-    const total = files.length;
+    // Drag and drop
+    ['dragenter','dragover'].forEach(evt => {
+      dropArea.addEventListener(evt, e => {
+        e.preventDefault();
+        dropArea.classList.add('hover');
+      });
+    });
 
-    for (let i = 0; i < total; i++){
-      const arrayBuffer = await files[i].arrayBuffer();
-      const pdf = await PDFLib.PDFDocument.load(arrayBuffer);
-      const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-      pages.forEach(page => mergedPdf.addPage(page));
+    ['dragleave','drop'].forEach(evt => {
+      dropArea.addEventListener(evt, e => {
+        e.preventDefault();
+        dropArea.classList.remove('hover');
+      });
+    });
 
-      progressBar.style.width = `${Math.round(((i+1)/total)*100)}%`;
+    dropArea.addEventListener('drop', e => {
+      const dropped = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
+      if (dropped.length) {
+        files = dropped;
+        updateUI();
+      }
+    });
+
+    fileInput.onchange = () => {
+      files = Array.from(fileInput.files);
+      updateUI();
+    };
+
+    function updateUI() {
+      if (files.length) {
+        mergeBtn.disabled = false;
+        dropArea.innerHTML = `<p>${files.length} PDF file(s) ready to merge.</p><button id="file-btn">Select More</button>`;
+        document.getElementById('file-btn').onclick = () => fileInput.click();
+      } else {
+        mergeBtn.disabled = true;
+        dropArea.innerHTML = `<p>Drag & Drop PDF files here or <button id="file-btn">Select Files</button></p>`;
+        document.getElementById('file-btn').onclick = () => fileInput.click();
+      }
+      statusMessage.textContent = '';
+      statusMessage.className = '';
     }
 
-    const mergedBytes = await mergedPdf.save();
-    const blob = new Blob([mergedBytes], {type:'application/pdf'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'merged.pdf';
-    a.click();
-    URL.revokeObjectURL(url);
-  } catch(e){
-    alert('Error merging PDFs: ' + e.message);
-  } finally {
-    progressContainer.style.display = 'none';
-    mergeBtn.disabled = false;
-    updateUI();
-  }
-};
-</script>
+    mergeBtn.onclick = async () => {
+      if (files.length < 2) {
+        showStatus('Please select at least two PDF files.', false);
+        return;
+      }
+
+      mergeBtn.disabled = true;
+      progressContainer.style.display = 'block';
+      progressBar.style.width = '0%';
+      showStatus('Merging PDFs, please wait...', false);
+
+      try {
+        const mergedPdf = await PDFLib.PDFDocument.create();
+        const total = files.length;
+
+        for (let i = 0; i < total; i++) {
+          const arrayBuffer = await files[i].arrayBuffer();
+          const pdf = await PDFLib.PDFDocument.load(arrayBuffer);
+          const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+          pages.forEach(page => mergedPdf.addPage(page));
+          progressBar.style.width = `${Math.round(((i + 1) / total) * 100)}%`;
+        }
+
+        const mergedBytes = await mergedPdf.save();
+        const blob = new Blob([mergedBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'merged.pdf';
+        a.click();
+        URL.revokeObjectURL(url);
+
+        showStatus('Merge completed successfully!', true);
+      } catch (e) {
+        showStatus('Error merging PDFs: ' + e.message, false);
+      } finally {
+        progressContainer.style.display = 'none';
+        mergeBtn.disabled = false;
+        updateUI();
+      }
+    };
+
+    function showStatus(message, success) {
+      statusMessage.textContent = message;
+      statusMessage.className = success ? 'success' : '';
+    }
+  </script>
 </body>
 </html>
