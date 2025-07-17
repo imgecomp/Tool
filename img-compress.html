@@ -3,11 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title> Image Compressor</title>
+  <title>Image Compressor</title>
   <meta name="description" content="Compress images instantly online without quality loss. Drag & drop supported. SEO-friendly, fast & free." />
   <meta name="keywords" content="image compressor, online image compression, free image tool, drag and drop image resizer" />
   <meta name="author" content="MyToolsWebsite" />
-  <link rel="canonical" href="https://yourdomain.com/" />
   <link rel="icon" href="/favicon.ico" type="image/x-icon" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
   <style>
@@ -17,6 +16,8 @@
       background: linear-gradient(to bottom right, #f4f7f6, #ffffff);
       color: #333;
       min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
 
     header {
@@ -120,12 +121,26 @@
       opacity: 0.6;
     }
 
+    #statusMessage {
+      margin-top: 1rem;
+      text-align: center;
+      font-weight: 600;
+      font-size: 1rem;
+      color: #c0392b;
+    }
+
+    #statusMessage.success {
+      color: #27ae60;
+    }
+
     footer {
-      margin-top: 3rem;
+      margin-top: auto;
       text-align: center;
       font-size: 0.9rem;
-      padding: 1rem;
-      color: #888;
+      padding: 1.5rem 1rem;
+      color: white;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      border-radius: 20px 20px 0 0;
     }
 
     @media (max-width: 600px) {
@@ -165,6 +180,9 @@
       <button id="compressBtn" disabled>Compress & Download</button>
       <button id="resetBtn" disabled>Reset</button>
     </div>
+
+    <!-- Status Message -->
+    <div id="statusMessage"></div>
   </main>
 
   <footer>
@@ -180,6 +198,7 @@
     const resetBtn = document.getElementById('resetBtn');
     const compressionRange = document.getElementById('compressionRange');
     const compressionValue = document.getElementById('compressionValue');
+    const statusMessage = document.getElementById('statusMessage');
 
     let uploadedFile = null;
 
@@ -187,7 +206,7 @@
       compressionValue.textContent = compressionRange.value;
     });
 
-    // Handle drag and drop
+    // Drag & Drop
     dropZone.addEventListener('click', () => imageUpload.click());
     dropZone.addEventListener('dragover', e => {
       e.preventDefault();
@@ -208,7 +227,7 @@
     function handleImageUpload() {
       const file = imageUpload.files[0];
       if (!file || !file.type.startsWith('image/')) {
-        alert('Please upload a valid image.');
+        showStatus('Please upload a valid image file.', false);
         return reset();
       }
 
@@ -219,6 +238,10 @@
         previewContainer.style.display = 'block';
         compressBtn.disabled = false;
         resetBtn.disabled = false;
+        showStatus('', false);
+      };
+      reader.onerror = () => {
+        showStatus('Failed to read the image file.', false);
       };
       reader.readAsDataURL(file);
     }
@@ -226,36 +249,55 @@
     compressBtn.addEventListener('click', () => {
       if (!uploadedFile) return;
 
+      showStatus('Compressing image. Please wait...', false);
+
       const quality = compressionRange.value / 100;
       const img = new Image();
+
       img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const maxWidth = 800;
-        let { width, height } = img;
+        try {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          let { width, height } = img;
 
-        if (width > maxWidth) {
-          const ratio = maxWidth / width;
-          width = maxWidth;
-          height *= ratio;
+          // Optional max resize to manage larger images
+          const maxWidth = 1600;
+          if (width > maxWidth) {
+            const ratio = maxWidth / width;
+            width = maxWidth;
+            height *= ratio;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob(blob => {
+            if (!blob) {
+              return showStatus('Compression failed. Try with another image.', false);
+            }
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = uploadedFile.name.replace(/\.[^/.]+$/, '') + '_compressed.jpg';
+            a.click();
+            URL.revokeObjectURL(url);
+
+            showStatus('Image compressed and downloaded successfully!', true);
+          }, 'image/jpeg', quality);
+        } catch (error) {
+          showStatus('Unexpected error occurred while compressing.', false);
         }
+      };
 
-        canvas.width = width;
-        canvas.height = height;
-        ctx.drawImage(img, 0, 0, width, height);
-
-        canvas.toBlob(blob => {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = uploadedFile.name.replace(/\.[^/.]+$/, '') + '_compressed.jpg';
-          a.click();
-          URL.revokeObjectURL(url);
-        }, 'image/jpeg', quality);
+      img.onerror = () => {
+        showStatus('Unable to load image. It may be corrupted.', false);
       };
 
       const reader = new FileReader();
       reader.onload = e => img.src = e.target.result;
+      reader.onerror = () => showStatus('Failed to read image file.', false);
       reader.readAsDataURL(uploadedFile);
     });
 
@@ -268,6 +310,12 @@
       compressBtn.disabled = true;
       resetBtn.disabled = true;
       originalImage.src = '';
+      showStatus('', false);
+    }
+
+    function showStatus(message, success) {
+      statusMessage.textContent = message;
+      statusMessage.className = success ? 'success' : '';
     }
   </script>
 </body>
