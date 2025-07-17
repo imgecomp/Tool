@@ -7,7 +7,6 @@
   <meta name="description" content="Easily resize your images online with our free, fast, and secure image resize tool." />
   <meta name="keywords" content="Image Resize, Online Resizer, Free Image Tool" />
   <meta name="author" content="MyToolsWebsite" />
-  <link rel="icon" href="/favicon.ico" type="image/x-icon" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -93,11 +92,13 @@
       margin-bottom: 0.3rem;
     }
 
-    input[type="number"] {
+    input[type="number"],
+    select {
       padding: 10px;
       border: 1px solid #ccc;
       border-radius: 6px;
       width: 100%;
+      font-size: 1rem;
     }
 
     button {
@@ -144,6 +145,25 @@
       background: #3e8e41;
     }
 
+    .status-message {
+      text-align: center;
+      margin-top: 1rem;
+      font-weight: 600;
+      color: #c0392b;
+    }
+
+    .status-message.success {
+      color: #27ae60;
+    }
+
+    #loading {
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 1rem;
+      color: #555;
+      display: none;
+    }
+
     @media (max-width: 600px) {
       .input-group {
         flex-direction: column;
@@ -154,11 +174,10 @@
 <body>
 
 <header>
-  <h1>Resize your image </h1>
+  <h1>Resize Your Image</h1>
 </header>
 
 <main>
-<!--   <h2>Resize Your Image</h2> -->
   <p class="description">Upload or drag & drop an image. Resize it instantly. Free and fast!</p>
 
   <div id="drop-area">
@@ -176,10 +195,19 @@
         <label for="height">Height (px)</label>
         <input type="number" id="height" min="1" placeholder="e.g., 600" required />
       </div>
+      <div>
+        <label for="format">Format</label>
+        <select id="format">
+          <option value="png" selected>PNG</option>
+          <option value="jpeg">JPEG</option>
+        </select>
+      </div>
     </div>
     <button type="submit" onclick="resizeImage()">Resize Image</button>
   </form>
 
+  <div id="loading">Processing image, please wait...</div>
+  <div class="status-message" id="statusMessage"></div>
   <div id="result"></div>
 </main>
 
@@ -192,18 +220,17 @@
   const imageInput = document.getElementById('imageUpload');
   const fileBtn = document.getElementById('file-btn');
   const resultDiv = document.getElementById('result');
+  const statusMsg = document.getElementById('statusMessage');
+  const loadingIndicator = document.getElementById('loading');
   let selectedFile = null;
 
-  // Open file input when button clicked
   fileBtn.onclick = () => imageInput.click();
 
-  // Handle input change
   imageInput.addEventListener('change', () => {
     selectedFile = imageInput.files[0];
     dropArea.innerHTML = `<p>File selected: ${selectedFile.name}</p>`;
   });
 
-  // Drag & Drop
   dropArea.addEventListener('dragover', (e) => {
     e.preventDefault();
     dropArea.classList.add('hover');
@@ -222,48 +249,100 @@
       imageInput.files = e.dataTransfer.files;
       dropArea.innerHTML = `<p>File selected: ${file.name}</p>`;
     } else {
-      alert('Please drop a valid image file.');
+      showStatus('Please drop a valid image file.', false);
     }
   });
 
-  function resizeImage() {
+  function showStatus(message, success = false) {
+    statusMsg.textContent = message;
+    statusMsg.className = 'status-message' + (success ? ' success' : '');
+  }
+
+  function showLoading(show = true) {
+    loadingIndicator.style.display = show ? 'block' : 'none';
+  }
+
+  async function resizeImage() {
     const widthInput = document.getElementById('width');
     const heightInput = document.getElementById('height');
+    const formatSelect = document.getElementById('format');
+
+    showStatus('');
+    resultDiv.innerHTML = '';
+    showLoading(true);
 
     if (!selectedFile) {
-      alert('Please select an image.');
+      showLoading(false);
+      showStatus('Please select an image to resize.');
       return;
     }
 
     const width = parseInt(widthInput.value);
     const height = parseInt(heightInput.value);
+    const format = formatSelect.value.toLowerCase();
+    const mimeType = `image/${format}`;
+    const fileExtension = format === 'jpeg' ? 'jpg' : 'png';
 
     if (!width || !height || width <= 0 || height <= 0) {
-      alert('Please enter valid dimensions.');
+      showLoading(false);
+      showStatus('Width and height must be positive numbers.');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      const img = new Image();
-      img.onload = function () {
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
+    try {
+      const reader = new FileReader();
 
-        const resizedDataUrl = canvas.toDataURL('image/png');
-        resultDiv.innerHTML = `
-          <h3>Resized Image</h3>
-          <img src="${resizedDataUrl}" alt="Resized Image" />
-          <br />
-          <a href="${resizedDataUrl}" download="resized-image.png">Download Resized Image</a>
-        `;
+      reader.onload = function (e) {
+        try {
+          const img = new Image();
+          img.onload = function () {
+            try {
+              const canvas = document.createElement('canvas');
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, width, height);
+
+              const quality = format === 'jpeg' ? 0.9 : 1.0;
+              const resizedDataUrl = canvas.toDataURL(mimeType, quality);
+
+              resultDiv.innerHTML = `
+                <h3>Resized Image (${format.toUpperCase()})</h3>
+                <img src="${resizedDataUrl}" alt="Resized Image" />
+                <br />
+                <a href="${resizedDataUrl}" download="resized-image.${fileExtension}">Download Resized Image</a>
+              `;
+
+              showStatus('Image resized successfully!', true);
+            } catch (err) {
+              showStatus('Error during image resizing. Please try again.');
+            } finally {
+              showLoading(false);
+            }
+          };
+
+          img.onerror = () => {
+            showLoading(false);
+            showStatus('Unable to load image. The file might be corrupt.');
+          };
+
+          img.src = e.target.result;
+        } catch (imgError) {
+          showLoading(false);
+          showStatus('Something went wrong while processing the image.');
+        }
       };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(selectedFile);
+
+      reader.onerror = () => {
+        showLoading(false);
+        showStatus('Failed to read the file. Please try a different image.');
+      };
+
+      reader.readAsDataURL(selectedFile);
+    } catch (error) {
+      showLoading(false);
+      showStatus('Unexpected error occurred. Please try again or refresh the page.');
+    }
   }
 </script>
 
