@@ -84,6 +84,7 @@
       user-select: none;
       transition: background 0.3s, border-color 0.3s;
       cursor: pointer;
+      position: relative;
     }
     #drop-area.hover {
       border-color: #00b09b;
@@ -94,8 +95,12 @@
       color: #333;
       margin: 0;
     }
-    #drop-area input {
-      display: none;
+    #videoInput {
+      opacity: 0;
+      position: absolute;
+      inset: 0;
+      cursor: pointer;
+      z-index: 10;
     }
     #progress-container {
       width: 100%;
@@ -139,7 +144,7 @@
     <h2 id="mainTitle">Select or Drag Your Video</h2>
 
     <div id="drop-area" tabindex="0" role="button" aria-label="Select or drag video file">
-      <p>Drag & Drop video here or click to select</p>
+      <p id="dropText">Drag & Drop video here or click to select</p>
       <input type="file" id="videoInput" accept="video/*" />
     </div>
 
@@ -187,6 +192,7 @@
     const progBar = document.getElementById('progress-bar');
     const fmt = document.getElementById('formatSelect');
     const res = document.getElementById('resolutionSelect');
+    const dropText = document.getElementById('dropText');
 
     let file = null;
 
@@ -197,6 +203,7 @@
       progCont.setAttribute('aria-valuenow', 0);
       status.textContent = '';
       downloadLink.style.display = 'none';
+      dropText.textContent = 'Drag & Drop video here or click to select';
     }
 
     function handleSelect(f) {
@@ -205,47 +212,72 @@
         return;
       }
       file = f;
-      dropArea.innerHTML = `<p>Selected: ${f.name}</p>`;
+      dropText.textContent = `Selected: ${f.name}`;
       btn.disabled = false;
       status.textContent = '';
       downloadLink.style.display = 'none';
     }
 
-    dropArea.addEventListener('click', () => input.click());
+    input.addEventListener('change', () => {
+      if (input.files.length) handleSelect(input.files[0]);
+    });
+
     dropArea.addEventListener('keydown', e => {
-      if (['Enter',' '].includes(e.key)) { e.preventDefault(); input.click(); }
+      if (['Enter',' '].includes(e.key)) {
+        e.preventDefault();
+        input.click();
+      }
     });
 
-    input.addEventListener('change', () => handleSelect(input.files[0]));
+    ['dragenter','dragover'].forEach(event =>
+      dropArea.addEventListener(event, e => {
+        e.preventDefault();
+        dropArea.classList.add('hover');
+      })
+    );
 
-    ['dragenter','dragover'].forEach(e =>
-      dropArea.addEventListener(e, ev => { ev.preventDefault(); dropArea.classList.add('hover'); })
+    ['dragleave','drop'].forEach(event =>
+      dropArea.addEventListener(event, e => {
+        e.preventDefault();
+        dropArea.classList.remove('hover');
+      })
     );
-    ['dragleave','drop'].forEach(e =>
-      dropArea.addEventListener(e, ev => { ev.preventDefault(); dropArea.classList.remove('hover'); })
-    );
+
     dropArea.addEventListener('drop', e => {
-      if (e.dataTransfer.files.length) handleSelect(e.dataTransfer.files[0]);
+      if (e.dataTransfer.files.length) {
+        handleSelect(e.dataTransfer.files[0]);
+      }
     });
 
-    async function loadFF() {
-      if (!ffmpegLoaded) {
-        status.textContent = 'Loading video engine...';
+    async function preloadFFmpeg() {
+      try {
+        status.textContent = '⚙️ Loading video engine...';
         await ffmpeg.load();
         ffmpegLoaded = true;
+        status.textContent = '';
+      } catch (e) {
+        status.textContent = '❌ Failed to load FFmpeg.';
       }
     }
 
+    window.addEventListener('DOMContentLoaded', () => {
+      preloadFFmpeg();
+    });
+
     btn.addEventListener('click', async () => {
-      if (!file) return alert('Select a video first.');
+      if (!file) return alert('Please select a video file.');
+      if (!ffmpegLoaded) {
+        status.textContent = '⏳ Video engine is still loading. Please wait...';
+        return;
+      }
+
       reset();
       btn.disabled = true;
       status.textContent = 'Preparing...';
       progCont.style.display = 'block';
-      await loadFF();
 
       try {
-        ffmpeg.FS('writeFile', 'in.mp4', await fetchFile(file));
+        ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(file));
         const outFmt = fmt.value;
         const scale = res.value !== 'original' ? ['-vf', `scale=${res.value}`] : [];
         const codecOpts = outFmt === 'mp4' || outFmt === 'mov'
@@ -254,15 +286,15 @@
           ? ['-vcodec', 'libvpx', '-b:v', '1M']
           : ['-vcodec', 'mjpeg'];
 
-        const outName = `out.${outFmt}`;
+        const outName = `output.${outFmt}`;
         status.textContent = 'Processing...';
         ffmpeg.setProgress(({ ratio }) => {
-          const pct = Math.min(100, Math.round(ratio * 100));
+          const pct = Math.round(ratio * 100);
           progBar.style.width = pct + '%';
           progCont.setAttribute('aria-valuenow', pct);
         });
 
-        await ffmpeg.run('-i', 'in.mp4', ...scale, ...codecOpts, outName);
+        await ffmpeg.run('-i', 'input.mp4', ...scale, ...codecOpts, outName);
 
         const data = ffmpeg.FS('readFile', outName);
         const blob = new Blob([data.buffer], { type: `video/${outFmt}` });
@@ -273,6 +305,7 @@
         downloadLink.style.display = 'inline-block';
         status.textContent = '✅ Done!';
       } catch (err) {
+        console.error(err);
         status.textContent = '❌ Error: ' + err.message;
       } finally {
         btn.disabled = false;
