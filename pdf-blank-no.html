@@ -1,0 +1,268 @@
+<!-- Start of PDF Edit Tool: Add Blank Pages, Page Numbers, Headers & Footers with Live Preview -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PDF Add Pages & Page Numbers - MyToolsWebsite</title>
+  <meta name="description" content="Add blank pages, page numbers, headers and footers to PDF. Fully frontend-only, fast, mobile-friendly and secure." />
+  <meta name="keywords" content="Add blank page, Add page numbers, headers, footers, Online PDF Tool, Free PDF Editor" />
+  <meta name="author" content="MyToolsWebsite" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Roboto+Mono:wght@500&family=Noto+Sans+Devanagari&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to bottom right, #fdfdfd, #f2f6fb);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    header, footer {
+      width: 100%;
+      text-align: center;
+      padding: 1em 0;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: #fff;
+    }
+
+    header { border-bottom-left-radius: 40px; border-bottom-right-radius: 40px; }
+    footer { border-top-left-radius: 40px; border-top-right-radius: 40px; }
+
+    h1 { margin: 0; font-size: 2rem; }
+
+    .tool-container {
+      max-width: 900px;
+      margin: 2rem;
+      padding: 2rem;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1);
+      width: 95%;
+    }
+
+    .upload-zone {
+      border: 2px dashed #ccc;
+      padding: 2rem;
+      text-align: center;
+      margin-bottom: 1.5rem;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .upload-zone.dragover { background: #e3f2fd; }
+
+    .input-group { margin: 1rem 0; }
+    label { display: block; font-weight: 600; margin-bottom: 0.5rem; }
+
+    input, select {
+      width: 100%;
+      padding: 0.6em;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    .progress { display: none; margin: 1rem 0; height: 20px; background: #eee; border-radius: 12px; overflow: hidden; }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: #3fba6f;
+      color: white;
+      text-align: center;
+      line-height: 20px;
+      font-size: 0.8rem;
+    }
+
+    button {
+      padding: 0.8em 2em;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-top: 1rem;
+      transition: background 0.3s ease;
+    }
+
+    button:hover { background: linear-gradient(to right, #96c93d, #00b09b); }
+    .download-link { display: none; margin-top: 1rem; text-align: center; }
+    iframe { width: 100%; height: 500px; border: 1px solid #ccc; margin-top: 1.5rem; border-radius: 12px; display: none; }
+
+    @media (max-width: 768px) {
+      .tool-container { margin: 1rem; padding: 1rem; }
+      iframe { height: 300px; }
+    }
+  </style>
+</head>
+<body>
+  <header><h1>Add Blank Pages & Page Numbers</h1></header>
+
+  <div class="tool-container">
+    <div class="upload-zone" id="uploadZone">
+      <p>Drag & Drop PDF here or click to upload</p>
+      <input type="file" id="pdfInput" accept="application/pdf" hidden />
+    </div>
+
+    <div class="input-group">
+      <label for="addPageIndex">Insert Blank Page After Page Number</label>
+      <input type="number" id="addPageIndex" placeholder="Leave empty to skip">
+    </div>
+
+    <div class="input-group">
+      <label for="addPageNumbers">Add Page Numbers?</label>
+      <select id="addPageNumbers">
+        <option value="no">No</option>
+        <option value="yes">Yes</option>
+      </select>
+    </div>
+
+    <div class="input-group">
+      <label for="fontChoice">Select Font for Page Numbers</label>
+      <select id="fontChoice">
+        <option value="Courier">Courier</option>
+        <option value="Helvetica">Helvetica</option>
+        <option value="TimesRoman">Times Roman</option>
+        <option value="NotoSansDevanagari">Devanagari (हिन्दी)</option>
+      </select>
+    </div>
+
+    <div class="input-group">
+      <label for="headerText">Header Text (optional)</label>
+      <input type="text" id="headerText" placeholder="e.g. Confidential">
+    </div>
+
+    <div class="input-group">
+      <label for="footerText">Footer Text (optional)</label>
+      <input type="text" id="footerText" placeholder="e.g. MyToolsWebsite">
+    </div>
+
+    <div class="progress" id="progress">
+      <div class="progress-bar" id="progressBar">0%</div>
+    </div>
+
+    <button onclick="processPDF(true)">Apply & Preview Changes</button>
+    <a id="downloadLink" class="download-link" download="edited.pdf">Download PDF</a>
+    <iframe id="previewFrame"></iframe>
+  </div>
+
+  <footer><p>&copy; 2025 MyToolsWebsite. All rights reserved.</p></footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+  <script>
+    const pdfInput = document.getElementById('pdfInput');
+    const uploadZone = document.getElementById('uploadZone');
+    const addPageIndex = document.getElementById('addPageIndex');
+    const addPageNumbers = document.getElementById('addPageNumbers');
+    const fontChoice = document.getElementById('fontChoice');
+    const headerText = document.getElementById('headerText');
+    const footerText = document.getElementById('footerText');
+    const progress = document.getElementById('progress');
+    const progressBar = document.getElementById('progressBar');
+    const previewFrame = document.getElementById('previewFrame');
+    const downloadLink = document.getElementById('downloadLink');
+
+    let pdfBytes;
+
+    uploadZone.addEventListener('click', () => pdfInput.click());
+    uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+    uploadZone.addEventListener('drop', e => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      pdfInput.files = e.dataTransfer.files;
+      loadPDF();
+    });
+    pdfInput.addEventListener('change', loadPDF);
+
+    function loadPDF() {
+      const file = pdfInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        pdfBytes = new Uint8Array(reader.result);
+        previewFrame.style.display = 'none';
+        downloadLink.style.display = 'none';
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    async function processPDF(showPreview = false) {
+      if (!pdfBytes) return alert("Upload a PDF file first.");
+      progress.style.display = 'block';
+      progressBar.style.width = '25%';
+
+      const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
+      const pages = pdfDoc.getPages();
+
+      const insertIndex = parseInt(addPageIndex.value);
+      if (!isNaN(insertIndex) && insertIndex >= 0 && insertIndex < pages.length) {
+        const blankPage = pdfDoc.addPage();
+        pdfDoc.insertPage(insertIndex + 1, blankPage);
+      }
+
+      let font;
+      switch (fontChoice.value) {
+        case 'Helvetica': font = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica); break;
+        case 'TimesRoman': font = await pdfDoc.embedFont(PDFLib.StandardFonts.TimesRoman); break;
+        case 'NotoSansDevanagari': font = await pdfDoc.embedFont(PDFLib.StandardFonts.Courier); break;
+        default: font = await pdfDoc.embedFont(PDFLib.StandardFonts.Courier);
+      }
+
+      pdfDoc.getPages().forEach((page, idx) => {
+        const { width, height } = page.getSize();
+
+        if (addPageNumbers.value === 'yes') {
+          page.drawText(`Page ${idx + 1}`, {
+            x: width / 2 - 30,
+            y: 30,
+            size: 14,
+            font,
+            color: PDFLib.rgb(0, 0.45, 0.1)
+          });
+        }
+
+        if (headerText.value.trim()) {
+          page.drawText(headerText.value, {
+            x: 40,
+            y: height - 40,
+            size: 12,
+            font,
+            color: PDFLib.rgb(0.2, 0.4, 0.2)
+          });
+        }
+
+        if (footerText.value.trim()) {
+          page.drawText(footerText.value, {
+            x: 40,
+            y: 20,
+            size: 12,
+            font,
+            color: PDFLib.rgb(0.2, 0.4, 0.2)
+          });
+        }
+      });
+
+      const modifiedPdf = await pdfDoc.save();
+      const modifiedBlob = new Blob([modifiedPdf], { type: 'application/pdf' });
+      const url = URL.createObjectURL(modifiedBlob);
+      downloadLink.href = url;
+      downloadLink.style.display = 'inline-block';
+
+      if (showPreview) {
+        previewFrame.src = url;
+        previewFrame.style.display = 'block';
+      }
+
+      progressBar.style.width = '100%';
+      progressBar.textContent = 'Done';
+    }
+  </script>
+</body>
+</html>
+<!-- End of PDF Edit Tool -->
