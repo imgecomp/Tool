@@ -1,0 +1,303 @@
+<!-- Start of Image Collage Tool -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Image Collage - MyToolsWebsite</title>
+  <meta name="description" content="Create modern image collages online. Drag and drop images, choose stylish patterns, and export in one click. No server needed." />
+  <meta name="keywords" content="Image Collage, Online Collage Maker, Modern Photo Grid, Free Image Tool" />
+  <meta name="author" content="MyToolsWebsite" />
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f4f6fa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header, footer {
+      width: 100%;
+      text-align: center;
+      padding: 1em 0;
+      background: linear-gradient(to right, #4CAF50, #2E7D32);
+      color: white;
+    }
+
+    header {
+      border-bottom-left-radius: 30px;
+      border-bottom-right-radius: 30px;
+    }
+
+    footer {
+      border-top-left-radius: 30px;
+      border-top-right-radius: 30px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 2rem;
+    }
+
+    .tool-container {
+      max-width: 1200px;
+      margin: 2rem;
+      padding: 1rem;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+
+    .upload-zone {
+      border: 2px dashed #aaa;
+      padding: 2rem;
+      text-align: center;
+      margin-bottom: 1rem;
+      border-radius: 10px;
+      transition: background 0.3s ease;
+    }
+
+    .upload-zone.dragover {
+      background: #e0f7fa;
+    }
+
+    .controls, .layout-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      justify-content: center;
+    }
+
+    .controls label {
+      display: flex;
+      flex-direction: column;
+      font-size: 0.9rem;
+    }
+
+    .layout-options button {
+      width: 60px;
+      height: 60px;
+      background: #ddd;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .layout-options button.active {
+      border: 2px solid #4CAF50;
+    }
+
+    .collage-preview {
+      display: grid;
+      gap: var(--gap, 10px);
+      border-radius: var(--radius, 10px);
+      background: var(--bgColor, #fff);
+      padding: 10px;
+      max-width: 100%;
+      max-height: 400px;
+      overflow-y: auto;
+      transition: all 0.5s ease-in-out;
+    }
+
+    .collage-image {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      border-radius: inherit;
+    }
+
+    .collage-template {
+      animation: collageTemplateFade 1s ease-in-out;
+    }
+
+    @keyframes collageTemplateFade {
+      0% {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    button.download {
+      padding: 0.5em 1.5em;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button.download:hover {
+      background: #388E3C;
+    }
+
+    @media (max-width: 768px) {
+      .collage-preview {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Image Collage Maker</h1>
+  </header>
+
+  <main class="tool-container">
+    <div class="upload-zone" id="drop-zone">
+      <p>Drag & Drop Images Here or Click to Upload</p>
+      <input type="file" id="imageInput" accept="image/*" multiple hidden />
+    </div>
+
+    <div class="layout-options">
+      <button onclick="setLayout('2x2')">▦</button>
+      <button onclick="setLayout('1x3')">▤</button>
+      <button onclick="setLayout('bigTop')">⬛⬜⬜</button>
+      <button onclick="setLayout('leftFocus')">⬛⬜<br>⬜⬜</button>
+      <button onclick="setLayout('4x1')">⬛⬛⬛⬛</button>
+      <button onclick="setLayout('3x2')">⬛⬛⬛<br>⬛⬛⬛</button>
+      <button onclick="setLayout('centerFocus')">⬜⬛⬜<br>⬛⬛⬛</button>
+      <button onclick="setLayout('verticalStack')">⬛<br>⬛<br>⬛</button>
+      <button onclick="setLayout('zigzag')">⬛⬜⬛<br>⬜⬛⬜</button>
+    </div>
+
+    <div class="controls">
+      <label>
+        Padding
+        <input type="range" min="0" max="30" value="10" id="paddingRange" />
+      </label>
+      <label>
+        Border Radius
+        <input type="range" min="0" max="50" value="10" id="radiusRange" />
+      </label>
+      <label>
+        Background Color
+        <input type="color" id="bgColorPicker" value="#ffffff" />
+      </label>
+    </div>
+
+    <div class="collage-preview collage-template" id="collagePreview"></div>
+
+    <div style="text-align:center; margin-top:1rem;">
+      <button class="download" onclick="downloadCollage()">Download Collage</button>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 MyToolsWebsite. All rights reserved.</p>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script>
+    const dropZone = document.getElementById('drop-zone');
+    const imageInput = document.getElementById('imageInput');
+    const collagePreview = document.getElementById('collagePreview');
+    let layout = '2x2';
+
+    dropZone.addEventListener('click', () => imageInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const files = Array.from(e.dataTransfer.files);
+      handleFiles(files);
+    });
+
+    imageInput.addEventListener('change', () => {
+      const files = Array.from(imageInput.files);
+      handleFiles(files);
+    });
+
+    function handleFiles(files) {
+      collagePreview.innerHTML = '';
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          img.className = 'collage-image';
+          collagePreview.appendChild(img);
+          applyLayout();
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function setLayout(type) {
+      layout = type;
+      applyLayout();
+    }
+
+    function applyLayout() {
+      switch(layout) {
+        case '2x2':
+          collagePreview.style.gridTemplateColumns = '1fr 1fr';
+          break;
+        case '1x3':
+          collagePreview.style.gridTemplateColumns = '1fr';
+          break;
+        case 'bigTop':
+          collagePreview.style.gridTemplateColumns = '2fr 1fr 1fr';
+          break;
+        case 'leftFocus':
+          collagePreview.style.gridTemplateColumns = '1fr 2fr';
+          break;
+        case '4x1':
+          collagePreview.style.gridTemplateColumns = 'repeat(4, 1fr)';
+          break;
+        case '3x2':
+          collagePreview.style.gridTemplateColumns = 'repeat(3, 1fr)';
+          break;
+        case 'centerFocus':
+          collagePreview.style.gridTemplateColumns = '1fr 2fr 1fr';
+          break;
+        case 'verticalStack':
+          collagePreview.style.gridTemplateColumns = '1fr';
+          break;
+        case 'zigzag':
+          collagePreview.style.gridTemplateColumns = 'repeat(3, 1fr)';
+          break;
+        default:
+          collagePreview.style.gridTemplateColumns = '1fr 1fr';
+      }
+    }
+
+    document.getElementById('paddingRange').addEventListener('input', (e) => {
+      collagePreview.style.setProperty('--gap', e.target.value + 'px');
+    });
+
+    document.getElementById('radiusRange').addEventListener('input', (e) => {
+      collagePreview.style.setProperty('--radius', e.target.value + 'px');
+    });
+
+    document.getElementById('bgColorPicker').addEventListener('input', (e) => {
+      collagePreview.style.setProperty('--bgColor', e.target.value);
+    });
+
+    function downloadCollage() {
+      html2canvas(collagePreview).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'collage.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
+    }
+  </script>
+</body>
+</html>
+<!-- End of Image Collage Tool -->
