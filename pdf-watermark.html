@@ -1,0 +1,365 @@
+<!-- Start of PDF Watermark & Signature Tool -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PDF Watermark & Signature Tool - MyToolsWebsite</title>
+  <meta name="description" content="Add watermark or signature to PDF. Fully frontend-only, fast, mobile-friendly and secure." />
+  <meta name="keywords" content="PDF watermark, sign PDF, PDF signature, Online PDF Tool, Free PDF Editor" />
+  <meta name="author" content="MyToolsWebsite" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to bottom right, #fdfdfd, #f2f6fb);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    header, footer {
+      width: 100%;
+      text-align: center;
+      padding: 1em 0;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: #fff;
+    }
+
+    header {
+      border-bottom-left-radius: 40px;
+      border-bottom-right-radius: 40px;
+    }
+
+    footer {
+      border-top-left-radius: 40px;
+      border-top-right-radius: 40px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 2rem;
+    }
+
+    .tool-container {
+      max-width: 900px;
+      margin: 2rem;
+      padding: 2rem;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1);
+      width: 95%;
+    }
+
+    .upload-zone {
+      border: 2px dashed #ccc;
+      padding: 2rem;
+      text-align: center;
+      margin-bottom: 1.5rem;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      position: relative;
+    }
+
+    .upload-zone.dragover { background: #e3f2fd; }
+
+    .upload-zone::after {
+      content: attr(data-filename);
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .input-group { margin: 1rem 0; }
+
+    label { display: block; font-weight: 600; margin-bottom: 0.5rem; }
+
+    input[type="text"], select, input[type="number"], input[type="color"] {
+      width: 100%;
+      padding: 0.6em;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    canvas {
+      border: 1px solid #ccc;
+      margin-top: 1rem;
+      width: 100%;
+      max-width: 500px;
+      background: white;
+      touch-action: none;
+      display: none;
+    }
+
+    .progress { display: none; margin: 1rem 0; height: 20px; background: #eee; border-radius: 12px; overflow: hidden; }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: #3fba6f;
+      color: white;
+      text-align: center;
+      line-height: 20px;
+      font-size: 0.8rem;
+    }
+
+    button {
+      padding: 0.8em 2em;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-top: 1rem;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: linear-gradient(to right, #96c93d, #00b09b);
+    }
+
+    .download-link {
+      display: none;
+      margin-top: 1rem;
+      font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+      .tool-container { margin: 1rem; padding: 1rem; }
+      canvas { height: 150px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>PDF Watermark & Signature Tool</h1>
+  </header>
+
+  <div class="tool-container">
+    <div class="upload-zone" id="uploadZone" data-filename="No file selected">
+      <p>Drag & Drop PDF here or click to upload</p>
+      <input type="file" id="pdfInput" accept="application/pdf" hidden />
+    </div>
+
+    <div class="input-group">
+      <label for="textInput">Watermark/Signature Text</label>
+      <input type="text" id="textInput" placeholder="Enter text...">
+    </div>
+
+    <div class="input-group">
+      <label for="colorPicker">Text/Signature Color</label>
+      <input type="color" id="colorPicker" value="#008000">
+    </div>
+
+    <div class="input-group">
+      <label for="fontSelect">Font</label>
+      <select id="fontSelect">
+        <option value="Helvetica">Helvetica</option>
+        <option value="Times Roman">Times Roman</option>
+        <option value="Courier">Courier</option>
+      </select>
+    </div>
+
+    <div class="input-group">
+      <label for="fontSize">Font Size</label>
+      <input type="number" id="fontSize" value="24">
+    </div>
+
+    <div class="input-group">
+      <label for="position">Position</label>
+      <select id="position">
+        <option value="top-left">Top Left</option>
+        <option value="center">Center</option>
+        <option value="bottom-right">Bottom Right</option>
+      </select>
+    </div>
+
+    <div class="input-group">
+      <label for="pageSelect">Apply to Page (leave blank for all)</label>
+      <input type="text" id="pageSelect" placeholder="e.g., 1,3,5">
+    </div>
+
+    <div class="input-group">
+      <button onclick="toggleSignaturePad()">Draw Signature</button>
+      <canvas id="signatureCanvas" width="500" height="150"></canvas>
+      <button onclick="clearCanvas()">Clear Signature</button>
+    </div>
+
+    <div class="progress" id="progress">
+      <div class="progress-bar" id="progressBar">0%</div>
+    </div>
+
+    <button onclick="processPDF()">Apply & Download</button>
+    <a id="downloadLink" class="download-link" download="signed.pdf"></a>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 MyToolsWebsite. All rights reserved.</p>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+  <script>
+    const canvas = document.getElementById('signatureCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 2;
+
+    function toggleSignaturePad() {
+      canvas.style.display = canvas.style.display === 'block' ? 'none' : 'block';
+    }
+
+    let drawing = false;
+    let startX, startY;
+
+    canvas.addEventListener('pointerdown', e => {
+      drawing = true;
+      const rect = canvas.getBoundingClientRect();
+      [startX, startY] = [e.clientX - rect.left, e.clientY - rect.top];
+    });
+    canvas.addEventListener('pointerup', () => drawing = false);
+    canvas.addEventListener('pointerleave', () => drawing = false);
+    canvas.addEventListener('pointermove', e => {
+      if (drawing) {
+        const rect = canvas.getBoundingClientRect();
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        const [newX, newY] = [e.clientX - rect.left, e.clientY - rect.top];
+        ctx.lineTo(newX, newY);
+        ctx.stroke();
+        [startX, startY] = [newX, newY];
+      }
+    });
+
+    function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    const uploadZone = document.getElementById('uploadZone');
+    const pdfInput = document.getElementById('pdfInput');
+    const textInput = document.getElementById('textInput');
+    const fontSelect = document.getElementById('fontSelect');
+    const fontSize = document.getElementById('fontSize');
+    const position = document.getElementById('position');
+    const pageSelect = document.getElementById('pageSelect');
+    const colorPicker = document.getElementById('colorPicker');
+    const progress = document.getElementById('progress');
+    const progressBar = document.getElementById('progressBar');
+
+    let pdfBytes;
+
+    uploadZone.addEventListener('click', () => pdfInput.click());
+    uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+    uploadZone.addEventListener('drop', e => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      pdfInput.files = e.dataTransfer.files;
+      loadPDF();
+    });
+    pdfInput.addEventListener('change', loadPDF);
+
+    function loadPDF() {
+      const file = pdfInput.files[0];
+      if (!file) return;
+      uploadZone.setAttribute('data-filename', file.name);
+      const reader = new FileReader();
+      reader.onload = () => { pdfBytes = new Uint8Array(reader.result); };
+      reader.readAsArrayBuffer(file);
+    }
+
+    async function processPDF() {
+      if (!pdfBytes) return alert("Upload a PDF file first.");
+      progress.style.display = 'block';
+      progressBar.style.width = '10%';
+
+      const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
+      const pages = pdfDoc.getPages();
+      const font = await pdfDoc.embedFont(PDFLib.StandardFonts[fontSelect.value]);
+      const size = parseInt(fontSize.value);
+      const rgbColor = hexToRgb(colorPicker.value);
+
+      const imageData = canvas.toDataURL("image/png");
+      const pngImage = await pdfDoc.embedPng(imageData);
+
+      let selectedPages = Array.from({ length: pages.length }, (_, i) => i);
+      if (pageSelect.value.trim()) {
+        selectedPages = pageSelect.value.split(',').map(p => parseInt(p.trim()) - 1).filter(p => !isNaN(p) && p >= 0 && p < pages.length);
+      }
+
+      selectedPages.forEach((index, i) => {
+        const page = pages[index];
+        const { width, height } = page.getSize();
+        let x = 50, y = height - 50;
+
+        if (position.value === 'center') {
+          x = width / 2 - (size * textInput.value.length) / 4;
+          y = height / 2;
+        } else if (position.value === 'bottom-right') {
+          x = width - 150;
+          y = 50;
+        }
+
+        if (textInput.value) {
+          page.drawText(textInput.value, {
+            x, y,
+            size,
+            font,
+            color: PDFLib.rgb(rgbColor.r / 255, rgbColor.g / 255, rgbColor.b / 255),
+          });
+        }
+
+        if (canvas.style.display === 'block') {
+          page.drawImage(pngImage, {
+            x: 50,
+            y: 100,
+            width: 150,
+            height: 50,
+          });
+        }
+
+        progressBar.style.width = `${Math.round(((i + 1) / selectedPages.length) * 90)}%`;
+      });
+
+      const modifiedPdf = await pdfDoc.save();
+      const blob = new Blob([modifiedPdf], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.getElementById('downloadLink');
+      link.href = url;
+      link.style.display = 'inline-block';
+      link.textContent = "Click here to download your PDF";
+
+      if (link.dataset.prevUrl) {
+        URL.revokeObjectURL(link.dataset.prevUrl);
+      }
+      link.dataset.prevUrl = url;
+
+      progressBar.style.width = '100%';
+      progressBar.textContent = 'Done';
+      alert("✅ PDF downloaded successfully!");
+    }
+
+    function hexToRgb(hex) {
+      const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+      hex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      } : { r: 0, g: 0, b: 0 };
+    }
+  </script>
+</body>
+</html>
+<!-- End of PDF Watermark & Signature Tool -->
