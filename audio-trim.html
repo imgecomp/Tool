@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Audio Trimmer - ToolBox</title>
+  <meta name="description" content="Trim audio files quickly in your browser. No upload, fast and private." />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+    body {
+      margin: 0;
+      background: #f5f7fa;
+      color: #333;
+    }
+    header, footer {
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+      padding: 16px 32px;
+      text-align: center;
+    }
+    header h1, footer p {
+      margin: 0;
+      font-size: 20px;
+    }
+    main {
+      max-width: 700px;
+      margin: auto;
+      padding: 32px 16px;
+      text-align: center;
+    }
+    .drop-zone {
+      border: 2px dashed #96c93d;
+      padding: 40px;
+      border-radius: 12px;
+      background: #fff;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .drop-zone.dragover {
+      background: #e0ffe6;
+    }
+    #fileNameDisplay {
+      margin-top: 10px;
+      font-weight: 500;
+    }
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .controls input[type="number"] {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      width: 100%;
+    }
+    .controls button, #downloadBtn {
+      padding: 10px;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .controls button:hover, #downloadBtn:hover {
+      opacity: 0.9;
+    }
+    #progressBar {
+      width: 100%;
+      background: #eee;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-top: 20px;
+    }
+    #progressBar div {
+      height: 12px;
+      width: 0%;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      transition: width 0.4s ease;
+    }
+    #status {
+      margin-top: 16px;
+      font-weight: 600;
+    }
+    audio {
+      margin-top: 20px;
+      width: 100%;
+    }
+    #downloadBtn {
+      display: none;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Audio Trimmer</h1>
+</header>
+
+<main>
+  <div class="drop-zone" id="dropZone">Drag & drop audio file here or click to select</div>
+  <input type="file" id="fileInput" accept="audio/*" style="display:none" />
+  <p id="fileNameDisplay"></p>
+
+  <div class="controls" style="display:none" id="controls">
+    <input type="number" id="startTime" placeholder="Start time (in seconds)" min="0" />
+    <input type="number" id="endTime" placeholder="End time (in seconds)" min="0" />
+    <button onclick="trimAudio()">Trim Audio</button>
+    <div id="progressBar"><div></div></div>
+    <div id="status"></div>
+    <audio controls id="audioPlayer"></audio>
+    <button id="downloadBtn">Download Trimmed Audio</button>
+  </div>
+</main>
+
+<footer>
+  <p>&copy; 2025 Toolbox. All rights reserved.</p>
+</footer>
+
+<script>
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const controls = document.getElementById('controls');
+  const audioPlayer = document.getElementById('audioPlayer');
+  const fileNameDisplay = document.getElementById('fileNameDisplay');
+  const downloadBtn = document.getElementById('downloadBtn');
+  let originalBuffer = null;
+  let audioContext = new AudioContext();
+  let fileName = 'trimmed-audio.wav';
+  let trimmedBlobURL = '';
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    handleFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
+
+  function handleFile(file) {
+    if (!file.type.startsWith('audio/')) {
+      updateStatus("❌ Please select a valid audio file.", true);
+      return;
+    }
+
+    fileName = file.name.replace(/\.[^/.]+$/, "") + "-trimmed.wav";
+    fileNameDisplay.textContent = "Selected: " + file.name;
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      updateProgress(30, "Decoding audio...");
+      const arrayBuffer = e.target.result;
+      originalBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      updateProgress(100, "✅ Audio loaded! Set trim range and click 'Trim Audio'");
+      controls.style.display = 'flex';
+      downloadBtn.style.display = 'none';
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  async function trimAudio() {
+    const start = parseFloat(document.getElementById('startTime').value);
+    const end = parseFloat(document.getElementById('endTime').value);
+
+    if (isNaN(start) || isNaN(end) || start >= end || end > originalBuffer.duration) {
+      updateStatus("❌ Invalid start or end time.", true);
+      return;
+    }
+
+    updateProgress(20, "⏳ Trimming audio...");
+    const duration = end - start;
+    const trimmed = audioContext.createBuffer(
+      originalBuffer.numberOfChannels,
+      duration * originalBuffer.sampleRate,
+      originalBuffer.sampleRate
+    );
+
+    for (let i = 0; i < originalBuffer.numberOfChannels; i++) {
+      const channel = originalBuffer.getChannelData(i);
+      const trimmedChannel = trimmed.getChannelData(i);
+      trimmedChannel.set(channel.slice(start * originalBuffer.sampleRate, end * originalBuffer.sampleRate));
+    }
+
+    const wavBlob = bufferToWav(trimmed);
+    trimmedBlobURL = URL.createObjectURL(wavBlob);
+    audioPlayer.src = trimmedBlobURL;
+    updateProgress(100, "✅ Audio trimmed successfully!");
+    downloadBtn.href = trimmedBlobURL;
+    downloadBtn.download = fileName;
+    downloadBtn.style.display = 'inline-block';
+  }
+
+  function bufferToWav(buffer) {
+    const numOfChan = buffer.numberOfChannels;
+    const length = buffer.length * numOfChan * 2 + 44;
+    const bufferArray = new ArrayBuffer(length);
+    const view = new DataView(bufferArray);
+    let offset = 0;
+
+    function writeString(str) {
+      for (let i = 0; i < str.length; i++) view.setUint8(offset++, str.charCodeAt(i));
+    }
+
+    writeString('RIFF');
+    view.setUint32(offset, 36 + buffer.length * numOfChan * 2, true); offset += 4;
+    writeString('WAVE');
+    writeString('fmt ');
+    view.setUint32(offset, 16, true); offset += 4;
+    view.setUint16(offset, 1, true); offset += 2;
+    view.setUint16(offset, numOfChan, true); offset += 2;
+    view.setUint32(offset, buffer.sampleRate, true); offset += 4;
+    view.setUint32(offset, buffer.sampleRate * numOfChan * 2, true); offset += 4;
+    view.setUint16(offset, numOfChan * 2, true); offset += 2;
+    view.setUint16(offset, 16, true); offset += 2;
+    writeString('data');
+    view.setUint32(offset, buffer.length * numOfChan * 2, true); offset += 4;
+
+    for (let i = 0; i < buffer.length; i++) {
+      for (let ch = 0; ch < numOfChan; ch++) {
+        const sample = Math.max(-1, Math.min(1, buffer.getChannelData(ch)[i]));
+        view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+        offset += 2;
+      }
+    }
+    return new Blob([bufferArray], { type: 'audio/wav' });
+  }
+
+  function updateProgress(percent, message) {
+    document.querySelector('#progressBar div').style.width = percent + '%';
+    updateStatus(message);
+  }
+
+  function updateStatus(msg, error = false) {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.style.color = error ? 'red' : 'green';
+  }
+</script>
+</body>
+</html>
