@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Audio Merger - ToolBox</title>
+  <meta name="description" content="Merge multiple audio files in your browser. Fast, private, and secure—no upload required." />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    body { margin: 0; background: #f5f7fa; color: #333; }
+    header, footer {
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+      padding: 16px 32px;
+      text-align: center;
+    }
+    header h1, footer p { margin: 0; font-size: 20px; }
+    main {
+      max-width: 700px;
+      margin: auto;
+      padding: 32px 16px;
+      text-align: center;
+    }
+    .drop-zone {
+      border: 2px dashed #96c93d;
+      padding: 40px;
+      border-radius: 12px;
+      background: #fff;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .drop-zone.dragover { background: #e0ffe6; }
+    .browse-btn {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 10px 18px;
+      font-size: 15px;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .browse-btn:hover { opacity: 0.9; }
+    #fileInput { display: none; }
+    #fileList { margin-top: 12px; font-size: 15px; }
+    button {
+      margin-top: 20px;
+      padding: 12px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+      cursor: pointer;
+    }
+    button:hover { opacity: 0.9; }
+    #progressBar {
+      margin-top: 20px;
+      background: #eee;
+      height: 12px;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    #progressBar div {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      transition: width 0.4s ease;
+    }
+    #status { margin-top: 14px; font-weight: 600; }
+    audio { margin-top: 20px; width: 100%; }
+    #downloadBtn {
+      display: none;
+      margin-top: 16px;
+      text-decoration: none;
+      font-weight: 500;
+      padding: 10px 20px;
+      border-radius: 6px;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Audio Merger</h1>
+</header>
+
+<main>
+  <div class="drop-zone" id="dropZone">Drag & drop multiple audio files here or click</div>
+  <label for="fileInput" class="browse-btn">Browse Files</label>
+  <input type="file" id="fileInput" accept="audio/*" multiple />
+  
+  <div id="fileList"></div>
+  <button id="mergeBtn" style="display:none">Merge Audio Files</button>
+  <div id="progressBar"><div></div></div>
+  <div id="status"></div>
+  <audio controls id="audioPlayer"></audio>
+  <a id="downloadBtn">Download Merged Audio</a>
+</main>
+
+<footer>
+  <p>&copy; 2025 Toolbox. All rights reserved.</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.2/dist/ffmpeg.min.js"></script>
+<script>
+  const { createFFmpeg, fetchFile } = FFmpeg;
+  const ffmpeg = createFFmpeg({ log: true });
+
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const fileList = document.getElementById('fileList');
+  const mergeBtn = document.getElementById('mergeBtn');
+  const status = document.getElementById('status');
+  const progressBar = document.querySelector('#progressBar div');
+  const audioPlayer = document.getElementById('audioPlayer');
+  const downloadBtn = document.getElementById('downloadBtn');
+
+  let audioFiles = [];
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    handleFiles(e.dataTransfer.files);
+  });
+  fileInput.addEventListener('change', () => handleFiles(fileInput.files));
+
+  function handleFiles(files) {
+    audioFiles = Array.from(files).filter(file => file.type.startsWith('audio/'));
+    if (audioFiles.length < 2) {
+      updateStatus('❌ Please select at least two audio files.', true);
+      return;
+    }
+    fileList.innerHTML = 'Selected files:<br>' + audioFiles.map(f => f.name).join('<br>');
+    mergeBtn.style.display = 'inline-block';
+    updateStatus('✅ Ready to merge.');
+  }
+
+  mergeBtn.addEventListener('click', async () => {
+    updateProgress(10);
+    updateStatus('⏳ Loading FFmpeg...');
+    if (!ffmpeg.isLoaded()) await ffmpeg.load();
+
+    ffmpeg.FS('writeFile', 'list.txt', new TextEncoder().encode(
+      audioFiles.map((file, i) => {
+        const name = `audio${i}.mp3`;
+        ffmpeg.FS('writeFile', name, fetchFile(file));
+        return `file '${name}'`;
+      }).join('\n')
+    ));
+
+    updateProgress(50);
+    updateStatus('🔧 Merging audio files...');
+
+    await ffmpeg.run('-f', 'concat', '-safe', '0', '-i', 'list.txt', '-c', 'copy', 'output.mp3');
+    const data = ffmpeg.FS('readFile', 'output.mp3');
+    const url = URL.createObjectURL(new Blob([data.buffer], { type: 'audio/mp3' }));
+
+    audioPlayer.src = url;
+    downloadBtn.href = url;
+    downloadBtn.download = 'merged-audio.mp3';
+    downloadBtn.style.display = 'inline-block';
+    updateProgress(100);
+    updateStatus('✅ Merge complete!');
+  });
+
+  function updateProgress(percent) {
+    progressBar.style.width = percent + '%';
+  }
+
+  function updateStatus(message, isError = false) {
+    status.textContent = message;
+    status.style.color = isError ? 'red' : 'green';
+  }
+</script>
+
+</body>
+</html>
