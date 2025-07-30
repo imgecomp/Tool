@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Image Watermark Tool</title>
+  <meta name="description" content="Add text or logo watermarks to images. Drag, resize, move, and download securely. Fully frontend-based and fast.">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f5f7fa;
+      display: flex; flex-direction: column;
+      min-height: 100vh;
+    }
+    header, footer {
+      text-align: center;
+      padding: 1rem;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+    }
+    header {
+      border-bottom-left-radius: 20px;
+      border-bottom-right-radius: 20px;
+    }
+    footer {
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+    }
+    main {
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 1.5rem;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    input, button {
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      width: 100%;
+    }
+    button {
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+      cursor: pointer;
+      border: none;
+    }
+    button:hover {
+      background: linear-gradient(to right, #019180, #85b338);
+    }
+    label { display: block; margin: 0.5rem 0 0.3rem; font-weight: 600; }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .controls > div {
+      flex: 1 1 180px;
+    }
+    #dropZone {
+      text-align: center;
+      border: 2px dashed #ccc;
+      padding: 1rem;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+      cursor: pointer;
+    }
+    canvas {
+      max-width: 100%;
+      border: 1px solid #ccc;
+      margin: 1rem 0;
+      cursor: move;
+    }
+    .status-message {
+      margin-top: 1rem;
+      text-align: center;
+      font-weight: 600;
+      color: #c0392b;
+    }
+    .status-message.success {
+      color: #27ae60;
+    }
+    .preset-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <header><h1>Image Watermark Tool</h1></header>
+  <main>
+    <div id="dropZone" onclick="document.getElementById('imageUpload').click()">
+      <strong>Click to Select Image</strong> or Drag & Drop Image Here
+      <input type="file" id="imageUpload" accept="image/*" style="display: none;" />
+    </div>
+
+    <div class="controls">
+      <div>
+        <label>Watermark Text</label>
+        <input type="text" id="watermarkText" placeholder="Enter watermark text">
+      </div>
+      <div>
+        <label>Font Size</label>
+        <input type="number" id="fontSize" value="18">
+      </div>
+      <div>
+        <label>Color</label>
+        <input type="color" id="fontColor" value="#ff0000">
+      </div>
+      <div>
+        <label>Opacity</label>
+        <input type="range" id="opacity" min="0" max="1" step="0.1" value="1">
+      </div>
+    </div>
+
+    <button onclick="addWatermark()">Add Watermark</button>
+
+    <div class="preset-buttons">
+      <button onclick="setPosition('top-left')">Top Left</button>
+      <button onclick="setPosition('top-right')">Top Right</button>
+      <button onclick="setPosition('bottom-left')">Bottom Left</button>
+      <button onclick="setPosition('bottom-right')">Bottom Right</button>
+      <button onclick="setPosition('center')">Center</button>
+    </div>
+
+    <canvas id="previewCanvas"></canvas>
+    <button onclick="undoLast()">Undo Last</button>
+    <button onclick="downloadImage()">Download Image</button>
+    <div id="status" class="status-message"></div>
+  </main>
+  <footer>© 2025 MyToolsWebsite. All rights reserved.</footer>
+
+  <script>
+    const canvas = document.getElementById('previewCanvas');
+    const ctx = canvas.getContext('2d');
+    const dropZone = document.getElementById('dropZone');
+    const imageUpload = document.getElementById('imageUpload');
+    const statusMsg = document.getElementById('status');
+
+    let baseImage = null;
+    let dragging = false;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
+    const layers = [];
+
+    function loadImage(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          baseImage = img;
+          canvas.width = img.width;
+          canvas.height = img.height;
+          drawCanvas();
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    imageUpload.addEventListener('change', () => {
+      if (imageUpload.files.length > 0) loadImage(imageUpload.files[0]);
+    });
+
+    ['dragenter', 'dragover'].forEach(event => {
+      dropZone.addEventListener(event, e => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#00b09b';
+      });
+    });
+    ['dragleave', 'drop'].forEach(event => {
+      dropZone.addEventListener(event, e => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#ccc';
+      });
+    });
+    dropZone.addEventListener('drop', e => {
+      if (e.dataTransfer.files.length > 0) loadImage(e.dataTransfer.files[0]);
+    });
+
+    function addWatermark() {
+      const text = document.getElementById('watermarkText').value;
+      const size = parseInt(document.getElementById('fontSize').value);
+      const color = document.getElementById('fontColor').value;
+      const opacity = parseFloat(document.getElementById('opacity').value);
+
+      if (!text || !baseImage) return showStatus('Please select an image and enter watermark text.');
+
+      const x = 50;
+      const y = 50 + size;
+
+      layers.push({ type: 'text', text, size, color, opacity, x, y });
+      drawCanvas();
+      showStatus('Watermark added.', true);
+    }
+
+    function undoLast() {
+      if (layers.length === 0) return showStatus("Nothing to undo.");
+      layers.pop();
+      drawCanvas();
+      showStatus("Last watermark removed.", true);
+    }
+    
+    function setPosition(pos) {
+      if (!baseImage || layers.length === 0) return showStatus("Add a watermark first");
+      const layer = layers[layers.length - 1];
+      const margin = 20;
+
+      if (layer.type === 'text') {
+        ctx.font = `${layer.size}px Poppins`;
+        const w = ctx.measureText(layer.text).width;
+        const h = layer.size;
+
+        switch (pos) {
+          case 'top-left': layer.x = margin; layer.y = margin + h; break;
+          case 'top-right': layer.x = canvas.width - w - margin; layer.y = margin + h; break;
+          case 'bottom-left': layer.x = margin; layer.y = canvas.height - margin; break;
+          case 'bottom-right': layer.x = canvas.width - w - margin; layer.y = canvas.height - margin; break;
+          case 'center': layer.x = (canvas.width - w) / 2; layer.y = (canvas.height + h) / 2; break;
+        }
+      }
+
+      drawCanvas();
+      showStatus(`Watermark moved to ${pos.replace('-', ' ')}`, true);
+    }
+
+    function drawCanvas() {
+      if (!baseImage) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(baseImage, 0, 0);
+      layers.forEach(layer => {
+        if (layer.type === 'text') {
+          ctx.globalAlpha = layer.opacity;
+          ctx.fillStyle = layer.color;
+          ctx.font = `${layer.size}px Poppins`;
+          ctx.fillText(layer.text, layer.x, layer.y);
+        }
+      });
+      ctx.globalAlpha = 1;
+    }
+
+    function downloadImage() {
+      const link = document.createElement('a');
+      link.download = 'watermarked-image.png';
+      link.href = canvas.toDataURL();
+      link.click();
+      showStatus("Image downloaded successfully!", true);
+    }
+
+    function showStatus(msg, success = false) {
+      statusMsg.textContent = msg;
+      statusMsg.className = 'status-message' + (success ? ' success' : '');
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+      if (layers.length === 0) return;
+      const layer = layers[layers.length - 1];
+      const mouseX = e.offsetX;
+      const mouseY = e.offsetY;
+      ctx.font = `${layer.size}px Poppins`;
+      const textWidth = ctx.measureText(layer.text).width;
+      const textHeight = layer.size;
+
+      if (
+        mouseX >= layer.x &&
+        mouseX <= layer.x + textWidth &&
+        mouseY <= layer.y &&
+        mouseY >= layer.y - textHeight
+      ) {
+        dragging = true;
+        dragOffsetX = mouseX - layer.x;
+        dragOffsetY = mouseY - layer.y;
+      }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      const layer = layers[layers.length - 1];
+      layer.x = e.offsetX - dragOffsetX;
+      layer.y = e.offsetY - dragOffsetY;
+      drawCanvas();
+    });
+
+    canvas.addEventListener('mouseup', () => {
+      dragging = false;
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+      dragging = false;
+    });
+  </script>
+</body>
+</html>
