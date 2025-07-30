@@ -24,10 +24,7 @@
       color: white;
       text-align: center;
       padding: 1rem;
-      border-radius: 0 0 10px 10px;
-    }
-    footer {
-      border-radius: 10px 10px 0 0;
+      font-size: 1.5rem;
     }
     main {
       flex: 1;
@@ -120,14 +117,13 @@
     @media (max-width: 600px) {
       .filter-buttons {
         grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-        max-height: 180px;
       }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>Apply Filters to Your Image</h1>
+    Apply Filters to Your Image
   </header>
   <main>
     <p class="description">Upload or drag & drop an image. Apply filters instantly. No server needed!</p>
@@ -152,6 +148,7 @@
   <footer>
     © 2025 MyToolsWebsite. All rights reserved.
   </footer>
+
   <script>
     const fileInput = document.getElementById('imageUpload');
     const fileBtn = document.getElementById('file-btn');
@@ -165,7 +162,7 @@
     const filterButtons = document.getElementById('filterButtons');
 
     const filters = {
-      None: '', Grayscale: 'grayscale(100%)', Sepia: 'sepia(100%)', Invert: 'invert(100%)',
+      None: 'none', Grayscale: 'grayscale(100%)', Sepia: 'sepia(100%)', Invert: 'invert(100%)',
       Blur: 'blur(2px)', Brightness: 'brightness(1.2)', Contrast: 'contrast(1.4)', Saturate: 'saturate(2)',
       HueRotate: 'hue-rotate(90deg)', Moon: 'grayscale(100%) brightness(1.1) contrast(1.1)',
       Clarendon: 'contrast(1.2) saturate(1.35)', Gingham: 'contrast(1.1) brightness(1.1)',
@@ -214,8 +211,7 @@
           originalCanvas.width = filteredCanvas.width = img.width;
           originalCanvas.height = filteredCanvas.height = img.height;
           ctxOriginal.drawImage(img, 0, 0);
-          ctxFiltered.drawImage(img, 0, 0);
-          applyFilter(filters['None']);
+          applyFilter('none'); // default
         };
         img.src = e.target.result;
       };
@@ -223,9 +219,16 @@
     }
 
     function applyFilter(filterStyle) {
-      const imageData = ctxOriginal.getImageData(0, 0, originalCanvas.width, originalCanvas.height);
-      ctxFiltered.putImageData(imageData, 0, 0);
-      filteredCanvas.style.filter = filterStyle;
+      const tempCanvas = document.createElement('canvas');
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCanvas.width = originalCanvas.width;
+      tempCanvas.height = originalCanvas.height;
+      tempCtx.filter = filterStyle;
+      tempCtx.drawImage(originalCanvas, 0, 0);
+
+      ctxFiltered.clearRect(0, 0, filteredCanvas.width, filteredCanvas.height);
+      ctxFiltered.drawImage(tempCanvas, 0, 0);
+
       downloadLink.href = filteredCanvas.toDataURL('image/png');
     }
   </script>
