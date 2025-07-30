@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZIP File Viewer & Extractor - MyToolsWebsite</title>
+  <meta name="description" content="Extract and view ZIP file contents instantly online. 100% frontend, mobile-friendly and fast." />
+  <meta name="keywords" content="zip extractor, unzip online, zip file viewer, frontend zip tool, fast zip viewer" />
+  <meta name="author" content="MyToolsWebsite" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+   
+    html, body {
+  height: 100%;
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(to bottom right, #fdfdfd, #f2f6fb);
+  display: flex;
+  flex-direction: column;
+}
+    main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 2rem 1rem;
+}
+
+
+    header, footer {
+      width: 100%;
+      text-align: center;
+      padding: 1em 0;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: #fff;
+    }
+    header { border-bottom-left-radius: 40px; border-bottom-right-radius: 40px; }
+    footer { border-top-left-radius: 40px; border-top-right-radius: 40px; }
+    h1 { margin: 0; font-size: 2rem; }
+
+    .tool-container {
+      max-width: 800px;
+      margin: 2rem auto;
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      padding: 2rem;
+      width: 95%;
+    }
+
+    .upload-zone {
+      border: 2px dashed #aaa;
+      border-radius: 16px;
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      background: #fafafa;
+      transition: background 0.3s;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      background: #e0f7ec;
+    }
+
+    #fileInput { display: none; }
+
+    .progress {
+      height: 20px;
+      background: #eee;
+      border-radius: 12px;
+      margin: 1rem 0;
+      overflow: hidden;
+      display: none;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: #3fba6f;
+      color: white;
+      text-align: center;
+      line-height: 20px;
+      font-size: 0.8rem;
+    }
+
+    ul#fileList {
+      margin-top: 1rem;
+      padding-left: 0;
+      list-style: none;
+    }
+    ul#fileList li {
+      background: #f7f7f7;
+      padding: 10px 14px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      border-left: 4px solid #00b09b;
+      word-break: break-word;
+    }
+
+    button {
+      padding: 0.7em 1.5em;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: linear-gradient(to right, #96c93d, #00b09b);
+    }
+
+    @media (max-width: 768px) {
+      .tool-container { padding: 1.2rem; }
+    }
+  </style>
+</head>
+<body>
+  <header><h1>ZIP Viewer & Extractor</h1></header>
+<main>
+  <div class="tool-container">
+    <div class="upload-zone" id="uploadZone">
+      <p>Drag & Drop ZIP file here or click to upload</p>
+      <input type="file" id="fileInput" accept="application/zip" />
+    </div>
+
+    <div class="progress" id="progress">
+      <div class="progress-bar" id="progressBar">0%</div>
+    </div>
+
+    <ul id="fileList"></ul>
+    <button id="extractBtn" style="display:none">Extract ZIP</button>
+  </div>
+</main>
+  <footer><p>&copy; 2025 MyToolsWebsite. All rights reserved.</p></footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script>
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+    const progress = document.getElementById('progress');
+    const progressBar = document.getElementById('progressBar');
+    const fileList = document.getElementById('fileList');
+    const extractBtn = document.getElementById('extractBtn');
+
+    let currentZip;
+
+    uploadZone.addEventListener('click', () => fileInput.click());
+    uploadZone.addEventListener('dragover', e => {
+      e.preventDefault();
+      uploadZone.classList.add('dragover');
+    });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+    uploadZone.addEventListener('drop', e => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      fileInput.files = e.dataTransfer.files;
+      handleZip(fileInput.files[0]);
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length) handleZip(fileInput.files[0]);
+    });
+
+    function updateProgress(percent) {
+      progress.style.display = 'block';
+      progressBar.style.width = percent + '%';
+      progressBar.textContent = percent + '%';
+    }
+
+    async function handleZip(file) {
+      if (!file || !file.name.endsWith('.zip')) return alert('Please select a valid ZIP file.');
+
+      updateProgress(10);
+      const zip = new JSZip();
+      const zipData = await file.arrayBuffer();
+      currentZip = await zip.loadAsync(zipData);
+      updateProgress(50);
+
+      fileList.innerHTML = '';
+      Object.keys(currentZip.files).forEach(filename => {
+        const li = document.createElement('li');
+        li.textContent = filename;
+        fileList.appendChild(li);
+      });
+
+      updateProgress(100);
+      extractBtn.style.display = 'inline-block';
+    }
+
+    extractBtn.addEventListener('click', async () => {
+      if (!currentZip) return;
+      const folder = await currentZip.generateAsync({ type: 'blob' });
+      const blobURL = URL.createObjectURL(folder);
+      const a = document.createElement('a');
+      a.href = blobURL;
+      a.download = 'extracted.zip';
+      a.click();
+    });
+  </script>
+</body>
+</html>
