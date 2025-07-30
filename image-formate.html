@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Convert Image Format - MyToolsWebsite</title>
+  <meta name="description" content="Convert images to PNG, JPEG, WEBP, or BMP easily with our fast, free, and secure image format converter." />
+  <meta name="keywords" content="Image Format Converter, PNG to JPG, JPG to WebP, Free Image Tool" />
+  <meta name="author" content="MyToolsWebsite" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f5f7fa;
+      color: #333;
+      line-height: 1.6;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+      text-align: center;
+      padding: 1.5rem;
+      border-radius: 0 0 12px 12px;
+    }
+
+    footer {
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+      text-align: center;
+      padding: 1.5rem;
+      border-radius: 12px 12px 0 0;
+    }
+
+    main {
+      flex: 1;
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 2rem;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    p.description {
+      text-align: center;
+      max-width: 700px;
+      margin: 0 auto 2rem;
+      color: #555;
+    }
+
+    #drop-area {
+      border: 2px dashed #ccc;
+      padding: 2rem;
+      border-radius: 10px;
+      text-align: center;
+      margin-bottom: 2rem;
+      cursor: pointer;
+      background: #f9fdfc;
+      transition: all 0.3s;
+    }
+
+    #drop-area.hover {
+      border-color: #00b09b;
+      background-color: #e0f7f7;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    select {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
+      width: 100%;
+    }
+
+    label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    .input-group {
+      max-width: 300px;
+      margin: 0 auto 1.5rem;
+    }
+
+    button {
+      padding: 12px 20px;
+      background: linear-gradient(90deg, #00b09b, #96c93d);
+      color: #fff;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s;
+      display: block;
+      margin: 0 auto;
+    }
+
+    button:hover {
+      background: linear-gradient(90deg, #019180, #85b338);
+    }
+
+    #result {
+      margin-top: 2rem;
+      text-align: center;
+    }
+
+    #result img {
+      max-width: 100%;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+
+    #result a {
+      display: inline-block;
+      padding: 12px 20px;
+      background: #4CAF50;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      transition: background 0.3s;
+    }
+
+    #result a:hover {
+      background: #3e8e41;
+    }
+
+    .status-message {
+      text-align: center;
+      margin-top: 1rem;
+      font-weight: 600;
+      color: #c0392b;
+    }
+
+    .status-message.success {
+      color: #27ae60;
+    }
+
+    #loading {
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 1rem;
+      color: #555;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Convert Your Image Format</h1>
+</header>
+
+<main>
+  <p class="description">Upload or drag & drop an image. Choose your desired format. Instant conversion!</p>
+
+  <div id="drop-area">
+    <p>Drag & Drop image here or <button id="file-btn" type="button">Select File</button></p>
+    <input type="file" id="imageUpload" accept="image/*" />
+  </div>
+
+  <div class="input-group">
+    <label for="format">Convert To Format</label>
+    <select id="format">
+      <option value="png">PNG</option>
+      <option value="jpeg">JPEG</option>
+      <option value="webp">WEBP</option>
+      <option value="bmp">BMP</option>
+    </select>
+  </div>
+
+  <button type="button" onclick="convertImage()">Convert Image</button>
+
+  <div id="loading">Processing image, please wait...</div>
+  <div class="status-message" id="statusMessage"></div>
+  <div id="result"></div>
+</main>
+
+<footer>
+  © 2025 MyToolsWebsite. All rights reserved.
+</footer>
+
+<script>
+  const dropArea = document.getElementById('drop-area');
+  const imageInput = document.getElementById('imageUpload');
+  const fileBtn = document.getElementById('file-btn');
+  const formatSelect = document.getElementById('format');
+  const resultDiv = document.getElementById('result');
+  const statusMsg = document.getElementById('statusMessage');
+  const loadingIndicator = document.getElementById('loading');
+
+  let selectedFile = null;
+
+  fileBtn.onclick = () => imageInput.click();
+
+  imageInput.addEventListener('change', () => {
+    selectedFile = imageInput.files[0];
+    dropArea.innerHTML = `<p>File selected: ${selectedFile.name}</p>`;
+  });
+
+  dropArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropArea.classList.add('hover');
+  });
+
+  dropArea.addEventListener('dragleave', () => {
+    dropArea.classList.remove('hover');
+  });
+
+  dropArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropArea.classList.remove('hover');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      selectedFile = file;
+      imageInput.files = e.dataTransfer.files;
+      dropArea.innerHTML = `<p>File selected: ${file.name}</p>`;
+    } else {
+      showStatus('Please drop a valid image file.', false);
+    }
+  });
+
+  function showStatus(message, success = false) {
+    statusMsg.textContent = message;
+    statusMsg.className = 'status-message' + (success ? ' success' : '');
+  }
+
+  function showLoading(show = true) {
+    loadingIndicator.style.display = show ? 'block' : 'none';
+  }
+
+  function convertImage() {
+    showStatus('');
+    resultDiv.innerHTML = '';
+    showLoading(true);
+
+    if (!selectedFile) {
+      showLoading(false);
+      showStatus('Please select an image to convert.');
+      return;
+    }
+
+    const format = formatSelect.value.toLowerCase();
+    const mimeType = `image/${format}`;
+    const fileExtension = format === 'jpeg' ? 'jpg' : format;
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const img = new Image();
+      img.onload = function () {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+
+        const quality = format === 'jpeg' ? 0.9 : 1.0;
+        const convertedDataUrl = canvas.toDataURL(mimeType, quality);
+
+        resultDiv.innerHTML = `
+          <h3>Converted Image (${format.toUpperCase()})</h3>
+          <img src="${convertedDataUrl}" alt="Converted Image" />
+          <br />
+          <a href="${convertedDataUrl}" download="converted-image.${fileExtension}">Download Converted Image</a>
+        `;
+
+        showStatus('Image converted successfully!', true);
+        showLoading(false);
+      };
+
+      img.onerror = () => {
+        showLoading(false);
+        showStatus('Unable to load image. The file might be corrupt.');
+      };
+
+      img.src = e.target.result;
+    };
+
+    reader.onerror = () => {
+      showLoading(false);
+      showStatus('Failed to read the file. Please try a different image.');
+    };
+
+    reader.readAsDataURL(selectedFile);
+  }
+</script>
+
+</body>
+</html>
