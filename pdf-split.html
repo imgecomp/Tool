@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF Splitter - MyToolsWebsite</title>
+  <meta name="description" content="Split your PDF files by pages online for free. Fast, secure, and works entirely in your browser without a server." />
+  <meta name="keywords" content="PDF Split, Split PDF Pages, Online PDF Tool, Free PDF Splitter, PDF Range Extractor" />
+  <meta name="author" content="MyToolsWebsite" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to bottom right, #fdfdfd, #f2f6fb);
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      width: 100%;
+      text-align: center;
+      padding: 1em 0;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+      border-bottom-left-radius: 40px;
+      border-bottom-right-radius: 40px;
+    }
+
+    footer {
+      width: 100%;
+      text-align: center;
+      padding: 1em 0;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+      border-top-left-radius: 40px;
+      border-top-right-radius: 40px;
+      flex-shrink: 0;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 2rem 1rem;
+    }
+
+    .tool-container {
+      max-width: 900px;
+      width: 100%;
+      padding: 1.5rem;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .upload-zone {
+      border: 2px dashed #ccc;
+      padding: 2rem;
+      text-align: center;
+      margin-bottom: 1.5rem;
+      border-radius: 12px;
+      transition: background 0.3s ease, transform 0.2s ease;
+      cursor: pointer;
+    }
+
+    .upload-zone.dragover {
+      background: #e3f2fd;
+      transform: scale(1.02);
+    }
+
+    .controls label {
+      display: block;
+      margin-bottom: 1rem;
+    }
+
+    .controls input {
+      width: 100%;
+      padding: 0.6em;
+      margin-top: 0.3em;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    #fileInfo {
+      margin-bottom: 1rem;
+      color: #2e7d32;
+      font-weight: 500;
+    }
+
+    button.split {
+      padding: 0.7em 2em;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.3s ease, transform 0.2s ease;
+    }
+
+    button.split:hover {
+      background: linear-gradient(to right, #96c93d, #00b09b);
+      transform: scale(1.05);
+    }
+
+    .progress {
+      margin-top: 1rem;
+      width: 100%;
+      background: #eee;
+      border-radius: 12px;
+      overflow: hidden;
+      display: none;
+    }
+
+    .progress-bar {
+      height: 20px;
+      width: 0%;
+      background: #00b09b;
+      text-align: center;
+      color: white;
+      line-height: 20px;
+      font-size: 0.8rem;
+    }
+
+    #downloadSection a {
+      display: block;
+      margin-top: 1rem;
+      font-weight: 600;
+      color: #00b09b;
+    }
+
+    @media (max-width: 768px) {
+      .tool-container {
+        padding: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>PDF Splitter</h1>
+  </header>
+
+  <main>
+    <div class="tool-container">
+      <div class="upload-zone" id="uploadZone">
+        <p>Drag & Drop PDF here or click to upload</p>
+        <input type="file" id="pdfInput" accept="application/pdf" hidden />
+      </div>
+      <div id="fileInfo"></div>
+
+      <div class="controls">
+        <label>
+          Page Ranges (e.g., 1-3,5):
+          <input type="text" id="pageRanges" placeholder="Enter page numbers or ranges" />
+        </label>
+      </div>
+
+      <button class="split" onclick="splitPDF()">Split PDF</button>
+
+      <div class="progress" id="progress">
+        <div class="progress-bar" id="progressBar">0%</div>
+      </div>
+
+      <div id="downloadSection"></div>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 MyToolsWebsite. All rights reserved.</p>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+  <script>
+    const uploadZone = document.getElementById('uploadZone');
+    const pdfInput = document.getElementById('pdfInput');
+    const fileInfo = document.getElementById('fileInfo');
+
+    uploadZone.addEventListener('click', () => pdfInput.click());
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.classList.add('dragover');
+    });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      pdfInput.files = e.dataTransfer.files;
+      showFileName(pdfInput.files[0]);
+    });
+
+    pdfInput.addEventListener('change', () => {
+      if (pdfInput.files.length > 0) {
+        showFileName(pdfInput.files[0]);
+      }
+    });
+
+    function showFileName(file) {
+      fileInfo.innerHTML = `<strong>File loaded:</strong> ${file.name} <br><small>Size: ${(file.size / 1024 / 1024).toFixed(2)} MB</small>`;
+    }
+
+    async function splitPDF() {
+      const file = pdfInput.files[0];
+      if (!file) return alert("Please upload a PDF file.");
+
+      const ranges = document.getElementById('pageRanges').value.trim();
+      if (!ranges) return alert("Please enter page ranges.");
+
+      document.getElementById('progress').style.display = 'block';
+      const progressBar = document.getElementById('progressBar');
+      progressBar.style.width = '0%';
+      progressBar.textContent = '0%';
+
+      const reader = new FileReader();
+      reader.onload = async function () {
+        const existingPdfBytes = new Uint8Array(reader.result);
+        const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
+
+        const totalSteps = ranges.split(',').length;
+        let completed = 0;
+        const downloadSection = document.getElementById('downloadSection');
+        downloadSection.innerHTML = '';
+
+        for (let part of ranges.split(',')) {
+          let [start, end] = part.split('-').map(x => parseInt(x));
+          if (!end) end = start;
+
+          const newPdfDoc = await PDFLib.PDFDocument.create();
+          for (let i = start - 1; i < end; i++) {
+            const [copiedPage] = await newPdfDoc.copyPages(pdfDoc, [i]);
+            newPdfDoc.addPage(copiedPage);
+          }
+
+          const pdfBytes = await newPdfDoc.save();
+          const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+          const url = URL.createObjectURL(blob);
+
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `split-${start}-${end}.pdf`;
+          link.textContent = `✅ Download split ${start}-${end}`;
+          downloadSection.appendChild(link);
+
+          completed++;
+          const percent = Math.round((completed / totalSteps) * 100);
+          progressBar.style.width = percent + '%';
+          progressBar.textContent = percent + '%';
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  </script>
+</body>
+</html>
