@@ -6,12 +6,9 @@
   <title>PDF to Image Converter</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    /* ...existing styles unchanged... */
     body {
       font-family: 'Poppins', sans-serif;
       background: linear-gradient(to bottom right, #f4f7f6, #ffffff);
@@ -19,79 +16,34 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      padding: 0 1rem;
     }
-   header, footer {
-  width: 100%;
-  padding: 1.5rem;
-  background: linear-gradient(to right, #00b09b, #96c93d);
-  color: white;
-  text-align: center;
-  font-weight: 600;
-  font-size: 1.5rem;
-  box-shadow: 0 6px 20px rgba(0, 176, 155, 0.3);
-}
-header {
-  margin-top: 2rem;
-  border-radius: 0;
-}
-
-footer {
-  margin-top: 2rem;
-  font-size: 1rem;
-  border-radius: 0;
-}
-
-    header {
-  background: linear-gradient(90deg, #00b09b, #96c93d);
-  color: white;
-  text-align: center;
-  padding: 1.5rem;
-  font-size: 1.6rem;
-  border-radius: 0 0 12px 12px;
-  margin-bottom: 2rem;
-}
-
-footer {
-  background: linear-gradient(90deg, #00b09b, #96c93d);
-  color: white;
-  text-align: center;
-  padding: 1.5rem;
-  font-size: 1rem;
-  border-radius: 12px 12px 0 0;
-  margin-top: 2rem;
-} 
-
-    main {
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-
+    header, footer {
+      background: linear-gradient(90deg, #00b09b, #96c93d);
+      color: white;
+      text-align: center;
+      padding: 1.5rem;
+      font-size: 1.5rem;
+      font-weight: 600;
+      box-shadow: 0 6px 20px rgba(0, 176, 155, 0.3);
+    }
     main {
       background: white;
-      max-width: 800px;
-      width: 100%;
-      border-radius: 0 0 20px 20px;
-      padding: 2rem 2.5rem;
+      max-width: 900px;
+      width: 95%;
+      margin: 2rem auto;
+      border-radius: 20px;
+      padding: 2rem;
       box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
       flex-grow: 1;
-      box-sizing: border-box;
     }
     #drop-area {
       border: 2px dashed #00b09b;
       padding: 2rem;
       border-radius: 12px;
       text-align: center;
-      margin-bottom: 1.5rem;
-      cursor: pointer;
       background: #f9f9f9;
       transition: background 0.3s, border-color 0.3s;
-      width: 100%;
+      margin-bottom: 1.5rem;
     }
     #drop-area.hover {
       background-color: #e0f7f7;
@@ -167,43 +119,33 @@ footer {
       display: flex;
       flex-direction: column;
       align-items: center;
-      max-width: 200px;
-      word-break: break-word;
+      max-width: 240px;
     }
     .page-img {
-      max-width: 200px;
+      max-width: 100%;
       border: 1px solid #ccc;
       border-radius: 6px;
       margin-bottom: 0.5rem;
       box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-      user-select: none;
     }
-    @media (max-width: 600px) {
-      header, footer {
-        border-radius: 20px;
-        max-width: 100%;
-        height: 50px;
-        font-size: 1.2rem;
-      }
-      main {
-        padding: 1.5rem 1.5rem;
-        border-radius: 0 0 20px 20px;
-      }
-      button {
-        width: 100%;
-        min-width: unset;
-      }
-      .page-img {
-        max-width: 100%;
-      }
+    .download-btn {
+      font-size: 0.9rem;
+      padding: 0.4rem 1rem;
+      margin-top: 0.4rem;
+      border-radius: 20px;
+      background: #00b09b;
+      color: white;
+      text-decoration: none;
+    }
+    #download-all {
+      display: none;
+      margin-top: 1.5rem;
     }
   </style>
 </head>
 <body>
 
-  <header>
-    PDF to Image Converter
-  </header>
+  <header>PDF to Image Converter</header>
 
   <main>
     <div id="drop-area">
@@ -212,18 +154,14 @@ footer {
     </div>
 
     <button id="convert-btn" disabled>Convert PDF to Images</button>
-
-    <div id="progress-container">
-      <div id="progress-bar"></div>
-    </div>
+    <div id="progress-container"><div id="progress-bar"></div></div>
     <div id="status"></div>
-
     <div id="images-container"></div>
+
+    <button id="download-all">Download All Images (ZIP)</button>
   </main>
 
-  <footer>
-    © 2025 MyToolsWebsite. All rights reserved.
-  </footer>
+  <footer>© 2025 MyToolsWebsite. All rights reserved.</footer>
 
   <script>
     const dropArea = document.getElementById('drop-area');
@@ -234,8 +172,10 @@ footer {
     const progressContainer = document.getElementById('progress-container');
     const progressBar = document.getElementById('progress-bar');
     const statusDiv = document.getElementById('status');
+    const downloadAllBtn = document.getElementById('download-all');
 
     let selectedFiles = [];
+    let imageBlobs = [];
 
     fileBtn.onclick = () => fileInput.click();
 
@@ -244,7 +184,6 @@ footer {
       updateUI();
     };
 
-    // Drag & Drop handlers
     ['dragenter', 'dragover'].forEach(event => {
       dropArea.addEventListener(event, e => {
         e.preventDefault();
@@ -270,6 +209,8 @@ footer {
     function updateUI() {
       convertBtn.disabled = selectedFiles.length === 0;
       imagesContainer.innerHTML = '';
+      downloadAllBtn.style.display = 'none';
+      imageBlobs = [];
       clearStatus();
       dropArea.innerHTML = selectedFiles.length
         ? `<p>${selectedFiles.length} PDF file(s) ready.</p><button id="file-btn">Select More</button>`
@@ -284,12 +225,13 @@ footer {
       progressBar.style.width = '0%';
       convertBtn.disabled = true;
       fileBtn.disabled = true;
+      imageBlobs = [];
+      downloadAllBtn.style.display = 'none';
 
       let totalPages = 0;
       const pdfs = [];
 
       try {
-        // Load PDFs & count total pages
         for (const file of selectedFiles) {
           const buffer = await file.arrayBuffer();
           const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
@@ -297,10 +239,8 @@ footer {
           totalPages += pdf.numPages;
         }
       } catch (err) {
-        showStatus('Failed to load PDFs. Please try again.', false);
-        progressContainer.style.display = 'none';
-        convertBtn.disabled = false;
-        fileBtn.disabled = false;
+        showStatus('Failed to load PDFs.', false);
+        resetButtons();
         return;
       }
 
@@ -308,47 +248,71 @@ footer {
 
       try {
         for (const { file, pdf } of pdfs) {
-          const tasks = [];
           for (let i = 1; i <= pdf.numPages; i++) {
-            tasks.push((async () => {
-              const page = await pdf.getPage(i);
-              const scale = 1.0;
-              const viewport = page.getViewport({ scale });
-              const canvas = document.createElement('canvas');
-              const context = canvas.getContext('2d');
-              canvas.width = viewport.width;
-              canvas.height = viewport.height;
-              await page.render({ canvasContext: context, viewport }).promise;
+            const page = await pdf.getPage(i);
+            const viewport = page.getViewport({ scale: 1.5 });
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            await page.render({ canvasContext: context, viewport }).promise;
 
-              const wrapper = document.createElement('div');
-              wrapper.className = 'image-wrapper';
+            const wrapper = document.createElement('div');
+            wrapper.className = 'image-wrapper';
 
-              const img = document.createElement('img');
-              img.src = canvas.toDataURL();
-              img.className = 'page-img';
+            const img = document.createElement('img');
+            img.src = canvas.toDataURL('image/png');
+            img.className = 'page-img';
 
-              const caption = document.createElement('div');
-              caption.textContent = `${file.name.replace('.pdf', '')} - Page ${i}`;
+            const caption = document.createElement('div');
+            caption.textContent = `${file.name.replace('.pdf', '')} - Page ${i}`;
 
-              wrapper.appendChild(img);
-              wrapper.appendChild(caption);
-              imagesContainer.appendChild(wrapper);
+            const downloadLink = document.createElement('a');
+            downloadLink.href = img.src;
+            downloadLink.download = `${file.name.replace('.pdf', '')}-page-${i}.png`;
+            downloadLink.textContent = 'Download Image';
+            downloadLink.className = 'download-btn';
 
-              processedPages++;
-              progressBar.style.width = ((processedPages / totalPages) * 100) + '%';
-              showStatus(`Processing page ${processedPages} of ${totalPages}`);
-            })());
+            imageBlobs.push({ blob: img.src, name: `${file.name.replace('.pdf', '')}-page-${i}.png` });
+
+            wrapper.appendChild(img);
+            wrapper.appendChild(caption);
+            wrapper.appendChild(downloadLink);
+            imagesContainer.appendChild(wrapper);
+
+            processedPages++;
+            progressBar.style.width = ((processedPages / totalPages) * 100) + '%';
+            showStatus(`Processing page ${processedPages} of ${totalPages}`);
           }
-          await Promise.all(tasks);
         }
+
         showStatus('✅ All pages processed successfully!', true);
+        downloadAllBtn.style.display = 'inline-block';
+
       } catch (err) {
-        showStatus('Error during conversion. Please try again.', false);
+        showStatus('Error during conversion.', false);
       } finally {
+        resetButtons();
         progressContainer.style.display = 'none';
-        convertBtn.disabled = false;
-        fileBtn.disabled = false;
       }
+    };
+
+    downloadAllBtn.onclick = async () => {
+      if (!imageBlobs.length) return;
+      const zip = new JSZip();
+      const folder = zip.folder("pdf-images");
+
+      for (const { blob, name } of imageBlobs) {
+        const response = await fetch(blob);
+        const data = await response.blob();
+        folder.file(name, data);
+      }
+
+      const content = await zip.generateAsync({ type: "blob" });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(content);
+      link.download = "converted-images.zip";
+      link.click();
     };
 
     function showStatus(message, success = true) {
@@ -360,6 +324,11 @@ footer {
     function clearStatus() {
       statusDiv.innerText = '';
       statusDiv.classList.remove('error', 'success');
+    }
+
+    function resetButtons() {
+      convertBtn.disabled = false;
+      fileBtn.disabled = false;
     }
   </script>
 </body>
