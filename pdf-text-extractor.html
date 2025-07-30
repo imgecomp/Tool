@@ -1,0 +1,265 @@
+<!-- Start of PDF Text Extractor Tool -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF Text Extractor - MyToolsWebsite</title>
+  <meta name="description" content="Extract text content from PDF files online. Fast, secure, and works entirely in your browser without a server." />
+  <meta name="keywords" content="PDF Text Extractor, Extract PDF Text, Online PDF Tool, Free PDF Parser" />
+  <meta name="author" content="MyToolsWebsite" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to bottom right, #fdfdfd, #f2f6fb);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    header, footer {
+      width: 100%;
+      text-align: center;
+      padding: 1em 0;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+    }
+    header {
+      border-bottom-left-radius: 40px;
+      border-bottom-right-radius: 40px;
+    }
+    footer {
+      border-top-left-radius: 40px;
+      border-top-right-radius: 40px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 2rem;
+    }
+    .tool-container {
+      max-width: 900px;
+      margin: 2rem;
+      padding: 1.5rem;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+    .upload-zone {
+      border: 2px dashed #ccc;
+      padding: 2rem;
+      text-align: center;
+      margin-bottom: 1.5rem;
+      border-radius: 12px;
+      transition: background 0.3s ease, transform 0.2s ease;
+      cursor: pointer;
+    }
+    .upload-zone.dragover {
+      background: #e3f2fd;
+      transform: scale(1.02);
+    }
+    .file-info {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      color: #333;
+    }
+    .progress {
+      margin-top: 1rem;
+      width: 100%;
+      background: #eee;
+      border-radius: 12px;
+      overflow: hidden;
+      display: none;
+    }
+    .progress-bar {
+      height: 20px;
+      width: 0%;
+      background: #00b09b;
+      text-align: center;
+      color: white;
+      line-height: 20px;
+      font-size: 0.8rem;
+    }
+    textarea {
+      width: 100%;
+      min-height: 100px;
+      max-height: 300px;
+      margin-top: 1.5rem;
+      padding: 1rem;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      overflow-y: auto;
+      transition: height 0.3s ease;
+    }
+    button.extract {
+      padding: 0.7em 2em;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.3s ease, transform 0.2s ease;
+      margin-top: 1rem;
+    }
+    button.extract:hover {
+      background: linear-gradient(to right, #96c93d, #00b09b);
+      transform: scale(1.05);
+    }
+    .download-link {
+      margin-top: 1rem;
+      display: none;
+    }
+    .notification {
+      margin-top: 1rem;
+      padding: 0.75rem 1.2rem;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      display: none;
+      background: #dff0d8;
+      color: #3c763d;
+      text-align: center;
+    }
+    @media (max-width: 768px) {
+      .tool-container {
+        margin: 1rem;
+        padding: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>PDF Text Extractor</h1>
+  </header>
+
+  <div class="tool-container">
+    <div class="upload-zone" id="uploadZone">
+      <p>Drag & Drop PDF here or click to upload</p>
+      <input type="file" id="pdfInput" accept="application/pdf" hidden />
+    </div>
+
+    <div class="file-info" id="fileInfo"></div>
+
+    <button class="extract" onclick="extractText()">Extract Text</button>
+
+    <div class="progress" id="progress">
+      <div class="progress-bar" id="progressBar">0%</div>
+    </div>
+
+    <textarea id="outputText" placeholder="Extracted text will appear here..."></textarea>
+    <a id="downloadTxt" class="extract download-link" download="extracted-text.txt">Download .txt</a>
+
+    <div class="notification" id="notification"></div>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 MyToolsWebsite. All rights reserved.</p>
+  </footer>
+
+  <script>
+    const uploadZone = document.getElementById('uploadZone');
+    const pdfInput = document.getElementById('pdfInput');
+    const fileInfo = document.getElementById('fileInfo');
+    const outputText = document.getElementById('outputText');
+    const notification = document.getElementById('notification');
+
+    uploadZone.addEventListener('click', () => pdfInput.click());
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.classList.add('dragover');
+    });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      pdfInput.files = e.dataTransfer.files;
+      updateFileInfo();
+    });
+    pdfInput.addEventListener('change', updateFileInfo);
+
+    function updateFileInfo() {
+      const file = pdfInput.files[0];
+      if (file) {
+        const sizeInMB = (file.size / 1024 / 1024).toFixed(2);
+        fileInfo.textContent = `File Name: ${file.name} | Size: ${sizeInMB} MB`;
+      } else {
+        fileInfo.textContent = '';
+      }
+    }
+
+    function showNotification(message, isError = false) {
+      notification.textContent = message;
+      notification.style.background = isError ? '#f8d7da' : '#dff0d8';
+      notification.style.color = isError ? '#721c24' : '#3c763d';
+      notification.style.display = 'block';
+      setTimeout(() => {
+        notification.style.display = 'none';
+      }, 5000);
+    }
+
+    async function extractText() {
+      const file = pdfInput.files[0];
+      if (!file) return alert("Please upload a PDF file.");
+
+      const separatePages = confirm("Do you want to keep text separate for each page? Click OK for separate pages or Cancel to merge all.");
+
+      document.getElementById('progress').style.display = 'block';
+      const progressBar = document.getElementById('progressBar');
+      progressBar.style.width = '0%';
+      progressBar.textContent = '0%';
+
+      const reader = new FileReader();
+      reader.onload = async function () {
+        try {
+          const typedArray = new Uint8Array(reader.result);
+          const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
+
+          let fullText = '';
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            let pageText = textContent.items.map(item => item.str).join(' ').trim();
+
+            if (!pageText) {
+              const viewport = page.getViewport({ scale: 2 });
+              const canvas = document.createElement('canvas');
+              const context = canvas.getContext('2d');
+              canvas.height = viewport.height;
+              canvas.width = viewport.width;
+              await page.render({ canvasContext: context, viewport }).promise;
+              const dataURL = canvas.toDataURL();
+              const result = await Tesseract.recognize(dataURL, 'eng');
+              pageText = result.data.text.trim();
+            }
+
+            fullText += separatePages ? `\n--- Page ${i} ---\n${pageText}\n` : `${pageText} `;
+
+            const percent = Math.round((i / pdf.numPages) * 100);
+            progressBar.style.width = percent + '%';
+            progressBar.textContent = percent + '%';
+          }
+
+          outputText.value = fullText.trim();
+          const blob = new Blob([outputText.value], { type: 'text/plain' });
+          const url = URL.createObjectURL(blob);
+          const link = document.getElementById('downloadTxt');
+          link.href = url;
+          link.style.display = 'inline-block';
+          link.onclick = () => showNotification('✅ Text file downloaded successfully.');
+
+          showNotification('✅ Text extraction complete.');
+        } catch (err) {
+          showNotification('❌ Failed to extract text.', true);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  </script>
+</body>
+</html>
+<!-- End of PDF Text Extractor Tool -->
