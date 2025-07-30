@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ZIP to PDF Converter & Compressor - MyToolsWebsite</title>
+  <meta name="description" content="Convert and compress ZIP files online to PDF. Free, fast, mobile-friendly & fully browser-based tool." />
+  <meta name="keywords" content="ZIP to PDF, compress ZIP, convert ZIP to PDF, image to PDF, text to PDF, online ZIP compressor" />
+  <meta name="author" content="MyToolsWebsite" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    header, footer {
+      text-align: center;
+      padding: 1em;
+      color: white;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+    }
+
+    header {
+      border-bottom-left-radius: 16px;
+      border-bottom-right-radius: 16px;
+    }
+
+    footer {
+      border-top-left-radius: 16px;
+      border-top-right-radius: 16px;
+      margin-top: auto;
+    }
+
+    main {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    .upload-zone {
+      border: 2px dashed #00b09b;
+      padding: 2rem;
+      border-radius: 16px;
+      background: #fefefe;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .upload-zone.dragover {
+      background: #d7fbe8;
+    }
+
+    .upload-zone input[type="file"] {
+      display: none;
+    }
+
+    #fileName {
+      margin-top: 0.5em;
+      color: #555;
+      font-weight: 500;
+    }
+
+    #imagePreview {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: center;
+    }
+
+    #imagePreview img {
+      width: 100px;
+      height: auto;
+      border-radius: 10px;
+      object-fit: cover;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+
+    #convertBtn, #compressBtn, #downloadAllBtn,
+    #downloadPDFBtn, #downloadZIPBtn {
+      margin-top: 1.5rem;
+      padding: 0.8em 2em;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+      border: none;
+      border-radius: 16px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-right: 1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .progress {
+      margin-top: 1rem;
+      background: #ddd;
+      border-radius: 10px;
+      overflow: hidden;
+      display: none;
+    }
+
+    .progress-bar {
+      height: 20px;
+      width: 0%;
+      background: #00b09b;
+      text-align: center;
+      color: white;
+      line-height: 20px;
+      font-size: 0.8rem;
+    }
+
+    #downloadLink, #downloadZipLink {
+      display: none;
+    }
+
+    .notification {
+      margin-top: 1rem;
+      font-weight: 600;
+      color: #ff4d4f;
+    }
+
+    @media (max-width: 600px) {
+      #imagePreview img {
+        width: 80px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📁 ZIP to PDF Converter & Compressor</h1>
+  </header>
+
+  <main>
+    <div class="upload-zone" id="uploadZone">
+      <p>Drag & drop your ZIP file here or click to select</p>
+      <input type="file" id="zipInput" accept=".zip" />
+    </div>
+    <div id="fileName"></div>
+    <div id="imagePreview"></div>
+    <div class="notification" id="notify"></div>
+    <button id="convertBtn">Convert to PDF</button>
+    <button id="compressBtn">Compress ZIP</button>
+    <button id="downloadPDFBtn" style="display:none;">Download PDF</button>
+    <button id="downloadZIPBtn" style="display:none;">Download ZIP</button>
+    <button id="downloadAllBtn" style="display:none;">Download Both</button>
+
+    <div class="progress" id="progress">
+      <div class="progress-bar" id="progressBar">0%</div>
+    </div>
+
+    <a id="downloadLink" href="#" download="output.pdf"></a>
+    <a id="downloadZipLink" href="#" download="compressed.zip"></a>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 MyToolsWebsite - Fast & Free ZIP Tools</p>
+  </footer>
+
+  <script>
+    const zipInput = document.getElementById('zipInput');
+    const uploadZone = document.getElementById('uploadZone');
+    const imagePreview = document.getElementById('imagePreview');
+    const convertBtn = document.getElementById('convertBtn');
+    const compressBtn = document.getElementById('compressBtn');
+    const downloadAllBtn = document.getElementById('downloadAllBtn');
+    const downloadPDFBtn = document.getElementById('downloadPDFBtn');
+    const downloadZIPBtn = document.getElementById('downloadZIPBtn');
+    const progress = document.getElementById('progress');
+    const progressBar = document.getElementById('progressBar');
+    const downloadLink = document.getElementById('downloadLink');
+    const downloadZipLink = document.getElementById('downloadZipLink');
+    const notify = document.getElementById('notify');
+    const fileName = document.getElementById('fileName');
+
+    let fileEntries = [], originalZip = null, pdfBlobURL = '', zipBlobURL = '';
+
+    uploadZone.addEventListener('click', () => zipInput.click());
+    uploadZone.addEventListener('dragover', e => {
+      e.preventDefault();
+      uploadZone.classList.add('dragover');
+    });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+    uploadZone.addEventListener('drop', e => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) handleZip(e.dataTransfer.files[0]);
+    });
+    zipInput.addEventListener('change', () => {
+      if (zipInput.files.length) handleZip(zipInput.files[0]);
+    });
+
+    async function handleZip(file) {
+      originalZip = file;
+      imagePreview.innerHTML = '';
+      fileEntries = [];
+      notify.textContent = '';
+      fileName.textContent = `Selected: ${file.name}`;
+      downloadPDFBtn.style.display = 'none';
+      downloadZIPBtn.style.display = 'none';
+      downloadAllBtn.style.display = 'none';
+
+      const zip = new JSZip();
+      const loaded = await zip.loadAsync(file);
+      const allFiles = Object.keys(loaded.files);
+      const supported = allFiles.filter(name => /\.(jpg|jpeg|png|txt|md|html)$/i.test(name));
+
+      if (!supported.length) {
+        notify.textContent = 'No supported images or text files found in the ZIP.';
+        return;
+      }
+
+      for (let name of supported) {
+        const blob = await zip.file(name).async('blob');
+        fileEntries.push({ name, blob });
+
+        if (/\.(jpg|jpeg|png)$/i.test(name)) {
+          const url = URL.createObjectURL(blob);
+          const img = document.createElement('img');
+          img.src = url;
+          imagePreview.appendChild(img);
+        } else {
+          const note = document.createElement('div');
+          note.textContent = `📝 ${name}`;
+          imagePreview.appendChild(note);
+        }
+      }
+    }
+
+    convertBtn.addEventListener('click', async () => {
+      if (!fileEntries.length) {
+        notify.textContent = 'Please upload a valid ZIP first.';
+        return;
+      }
+
+      notify.textContent = '';
+      progress.style.display = 'block';
+      progressBar.style.width = '0%';
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF();
+
+      for (let i = 0; i < fileEntries.length; i++) {
+        const { name, blob } = fileEntries[i];
+
+        if (/\.(jpg|jpeg|png)$/i.test(name)) {
+          const img = await createImageBitmap(blob);
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          canvas.getContext('2d').drawImage(img, 0, 0);
+          const imgData = canvas.toDataURL('image/jpeg', 1.0);
+          if (i > 0) pdf.addPage();
+          pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+        } else {
+          const text = await blob.text();
+          if (i > 0) pdf.addPage();
+          const lines = pdf.splitTextToSize(text, 190);
+          pdf.text(lines, 10, 20);
+        }
+
+        const percent = Math.round(((i + 1) / fileEntries.length) * 100);
+        progressBar.style.width = `${percent}%`;
+        progressBar.innerText = `${percent}%`;
+      }
+
+      const pdfBlob = pdf.output('blob');
+      pdfBlobURL = URL.createObjectURL(pdfBlob);
+      downloadLink.href = pdfBlobURL;
+      downloadPDFBtn.style.display = 'inline-block';
+      notify.textContent = '✅ PDF successfully generated!';
+      progressBar.innerText = 'Done!';
+      if (zipBlobURL) downloadAllBtn.style.display = 'inline-block';
+    });
+
+    compressBtn.addEventListener('click', async () => {
+      if (!originalZip) {
+        notify.textContent = 'Upload a ZIP file first to compress.';
+        return;
+      }
+      notify.textContent = 'Compressing ZIP...';
+      const reader = new FileReader();
+
+      reader.onload = async function(evt) {
+        const loaded = await JSZip.loadAsync(evt.target.result);
+        const compressed = new JSZip();
+        for (const filename in loaded.files) {
+          const file = loaded.files[filename];
+          if (!file.dir) {
+            const content = await file.async('arraybuffer');
+            compressed.file(filename, content, { compression: 'DEFLATE' });
+          }
+        }
+
+        const blob = await compressed.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 9 } });
+        zipBlobURL = URL.createObjectURL(blob);
+        downloadZipLink.href = zipBlobURL;
+        downloadZIPBtn.style.display = 'inline-block';
+        notify.textContent = '✅ ZIP compressed!';
+        if (pdfBlobURL) downloadAllBtn.style.display = 'inline-block';
+      };
+
+      reader.readAsArrayBuffer(originalZip);
+    });
+
+    downloadPDFBtn.addEventListener('click', () => {
+      if (pdfBlobURL) {
+        const a = document.createElement('a');
+        a.href = pdfBlobURL;
+        a.download = 'converted.pdf';
+        a.click();
+      }
+    });
+
+    downloadZIPBtn.addEventListener('click', () => {
+      if (zipBlobURL) {
+        const a = document.createElement('a');
+        a.href = zipBlobURL;
+        a.download = 'compressed.zip';
+        a.click();
+      }
+    });
+
+    downloadAllBtn.addEventListener('click', () => {
+      if (pdfBlobURL) window.open(pdfBlobURL, '_blank');
+      if (zipBlobURL) window.open(zipBlobURL, '_blank');
+    });
+  </script>
+</body>
+</html>
