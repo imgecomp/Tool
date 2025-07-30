@@ -12,7 +12,6 @@
       margin: 0;
       padding: 0;
     }
-
     body {
       font-family: 'Poppins', sans-serif;
       background: linear-gradient(to bottom right, #f4f7f6, #ffffff);
@@ -23,29 +22,52 @@
       align-items: center;
       padding: 0 1rem;
     }
+   header, footer {
+  width: 100%;
+  padding: 1.5rem;
+  background: linear-gradient(to right, #00b09b, #96c93d);
+  color: white;
+  text-align: center;
+  font-weight: 600;
+  font-size: 1.5rem;
+  box-shadow: 0 6px 20px rgba(0, 176, 155, 0.3);
+}
+header {
+  margin-top: 2rem;
+  border-radius: 0;
+}
 
-    header, footer {
-      width: 100%;
-      padding: 1.5rem;
-      background: linear-gradient(to right, #00b09b, #96c93d);
-      color: white;
-      text-align: center;
-      font-weight: 600;
-      box-shadow: 0 6px 20px rgba(0, 176, 155, 0.3);
-      word-wrap: break-word;
-    }
+footer {
+  margin-top: 2rem;
+  font-size: 1rem;
+  border-radius: 0;
+}
 
     header {
-      font-size: clamp(1.2rem, 4vw, 1.6rem);
-      margin-top: 2rem;
-      border-radius: 0 0 12px 12px;
-    }
+  background: linear-gradient(90deg, #00b09b, #96c93d);
+  color: white;
+  text-align: center;
+  padding: 1.5rem;
+  font-size: 1.6rem;
+  border-radius: 0 0 12px 12px;
+  margin-bottom: 2rem;
+}
 
-    footer {
-      font-size: clamp(0.8rem, 2.5vw, 1rem);
-      margin-top: 2rem;
-      border-radius: 12px 12px 0 0;
-    }
+footer {
+  background: linear-gradient(90deg, #00b09b, #96c93d);
+  color: white;
+  text-align: center;
+  padding: 1.5rem;
+  font-size: 1rem;
+  border-radius: 12px 12px 0 0;
+  margin-top: 2rem;
+} 
+
+    main {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
 
     main {
       background: white;
@@ -58,8 +80,8 @@
       flex-direction: column;
       align-items: center;
       flex-grow: 1;
+      box-sizing: border-box;
     }
-
     #drop-area {
       border: 2px dashed #00b09b;
       padding: 2rem;
@@ -71,22 +93,18 @@
       transition: background 0.3s, border-color 0.3s;
       width: 100%;
     }
-
     #drop-area.hover {
       background-color: #e0f7f7;
       border-color: #00b09b;
     }
-
     #drop-area p {
       font-size: 1rem;
       font-weight: 500;
       color: #555;
     }
-
     input[type="file"] {
       display: none;
     }
-
     button {
       background: linear-gradient(90deg, #00b09b, #96c93d);
       color: white;
@@ -101,18 +119,15 @@
       margin: 1rem auto 0;
       user-select: none;
     }
-
     button:hover:not(:disabled) {
       background: linear-gradient(90deg, #019180, #85b338);
       transform: translateY(-2px);
     }
-
     button:disabled {
       background: #bbb;
       cursor: not-allowed;
       opacity: 0.6;
     }
-
     #progress-container {
       width: 100%;
       height: 20px;
@@ -122,29 +137,24 @@
       overflow: hidden;
       display: none;
     }
-
     #progress-bar {
       height: 100%;
       width: 0%;
       background: linear-gradient(90deg, #00b09b, #96c93d);
       transition: width 0.2s ease-out;
     }
-
     #status {
       text-align: center;
       margin-top: 10px;
       font-weight: 600;
       min-height: 24px;
     }
-
     #status.error {
       color: #c0392b;
     }
-
     #status.success {
       color: #27ae60;
     }
-
     #images-container {
       display: flex;
       flex-wrap: wrap;
@@ -153,7 +163,6 @@
       justify-content: center;
       width: 100%;
     }
-
     .image-wrapper {
       display: flex;
       flex-direction: column;
@@ -161,7 +170,6 @@
       max-width: 200px;
       word-break: break-word;
     }
-
     .page-img {
       max-width: 200px;
       border: 1px solid #ccc;
@@ -170,18 +178,21 @@
       box-shadow: 0 4px 8px rgba(0,0,0,0.05);
       user-select: none;
     }
-
     @media (max-width: 600px) {
+      header, footer {
+        border-radius: 20px;
+        max-width: 100%;
+        height: 50px;
+        font-size: 1.2rem;
+      }
       main {
         padding: 1.5rem 1.5rem;
         border-radius: 0 0 20px 20px;
       }
-
       button {
         width: 100%;
         min-width: unset;
       }
-
       .page-img {
         max-width: 100%;
       }
@@ -233,20 +244,19 @@
       updateUI();
     };
 
+    // Drag & Drop handlers
     ['dragenter', 'dragover'].forEach(event => {
       dropArea.addEventListener(event, e => {
         e.preventDefault();
         dropArea.classList.add('hover');
       });
     });
-
     ['dragleave', 'drop'].forEach(event => {
       dropArea.addEventListener(event, e => {
         e.preventDefault();
         dropArea.classList.remove('hover');
       });
     });
-
     dropArea.addEventListener('drop', e => {
       const droppedFiles = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
       if (!droppedFiles.length) {
@@ -279,6 +289,7 @@
       const pdfs = [];
 
       try {
+        // Load PDFs & count total pages
         for (const file of selectedFiles) {
           const buffer = await file.arrayBuffer();
           const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
