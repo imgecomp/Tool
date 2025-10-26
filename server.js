@@ -9,13 +9,12 @@ import os from "os";
 import { v4 as uuidv4 } from "uuid";
 import { createCanvas, loadImage } from "canvas";
 import sharp from "sharp";
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import JSZip from "jszip";
+import { PDFDocument } from "pdf-lib";
 import { exec } from "child_process";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegPath from "ffmpeg-static";
-
 import dotenv from "dotenv";
+
 dotenv.config();
 
 const app = express();
@@ -49,24 +48,6 @@ async function safeRm(fileOrDir) {
   try {
     await fs.rm(fileOrDir, { force: true, recursive: true });
   } catch {}
-}
-
-function hexToRgb(hex) {
-  const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-  hex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result
-    ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) }
-    : { r: 0, g: 0, b: 0 };
-}
-
-async function saveTempFile(file) {
-  const tempDir = "./temp";
-  await fs.mkdir(tempDir, { recursive: true });
-  const fileName = `${uuidv4()}${path.extname(file.name)}`;
-  const filePath = path.join(tempDir, fileName);
-  await file.mv(filePath);
-  return filePath;
 }
 
 // -------------------- AUDIO ROUTES --------------------
@@ -253,7 +234,7 @@ app.post("/video", async (req, res) => {
 });
 
 // -------------------- HEALTH CHECK --------------------
-app.get("/", (req, res) => res.send("Unified Audio, Image, PDF & Video Tools Backend is running"));
+app.get("/", (req, res) => res.send("✅ Unified Audio, Image, PDF & Video Tools Backend is running perfectly!"));
 
 // -------------------- START SERVER --------------------
-app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`✅ Server running at http://localhost:${PORT}`));
