@@ -138,6 +138,9 @@
 <footer>© 2025 MyToolsWebsite. All rights reserved.</footer>
 
 <script>
+ // ====== CONFIG: replace with your Railway backend URL ======
+  const BACKEND_URL = "tool-production-6a09.up.railway.app";
+  
 (async ()=>{
   tf.setBackend('wasm'); // faster
   const fileInput = document.getElementById('file-input'),
