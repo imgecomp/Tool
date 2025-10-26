@@ -179,6 +179,8 @@
   <footer>© 2025 My Tools Website</footer>
 
   <script>
+     // ====== CONFIG: replace with your Railway backend URL ======
+  const BACKEND_URL = "tool-production-6a09.up.railway.app";
     const { createFFmpeg, fetchFile } = FFmpeg;
     const ffmpeg = createFFmpeg({ log: false });
     let ffmpegLoaded = false;
